@@ -83,7 +83,7 @@ legend{font-weight:700;font-size:.85rem;color:var(--azul);padding:0 6px}
 .doc-row{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--linea)}
 .doc-row:last-child{border:0}
 .doc-row .t{flex:1;min-width:0}
-.semaforo{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.semaforo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 @media(max-width:700px){.semaforo{grid-template-columns:repeat(2,1fr)}}
 .sem{border-radius:12px;padding:12px;border:1px solid var(--linea);background:#fff}
 .sem b{display:block;font-size:.78rem;color:var(--gris);font-weight:600}

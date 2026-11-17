@@ -41,6 +41,7 @@ var API = (function () {
       var rec = porToken(db, r.token), a = rec.lab.referimientoArchivo; if (!a) throw new Error('Su referimiento todavía no está listo.');
       var f = await fget(a.fileId); return { nombre: 'Referimiento - ' + rec.nombre + '.' + ext(a.nombre, f.mime), mime: f.mime, b64: f.b64 };
     },
+    'cand.evaluacion': async function (db, r) { var rec = porToken(db, r.token); aplicarEvaluacion(rec, r.accion); guardar(db); return vistaCandidato(rec); },
     'cand.datos': async function (db, r) { var rec = porToken(db, r.token); aplicarDatos(rec, r.doc, r.datos || {}); guardar(db); return vistaCandidato(rec); },
     'cand.enviar': async function (db, r) { var rec = porToken(db, r.token); enviarExpediente(rec); guardar(db); return vistaCandidato(rec); },
     'admin.lista': async function (db) { return Object.keys(db).map(function (k) { return resumen(db[k]); }).sort(function (a, b) { return a.actualizado < b.actualizado ? 1 : -1; }); },

@@ -51,6 +51,7 @@ var ACCIONES_ = {
     var b = DriveApp.getFileById(a.fileId).getBlob();
     return { nombre: 'Referimiento - ' + rec.nombre + '.' + ext_(a.nombre, b.getContentType()), mime: b.getContentType(), b64: Utilities.base64Encode(b.getBytes()) };
   },
+  'cand.evaluacion': function (r) { var rec = porToken_(r.token); aplicarEvaluacion(rec, r.accion); guardar_(rec); return vistaCandidato(rec); },
   'cand.datos': function (r) { var rec = porToken_(r.token); aplicarDatos(rec, r.doc, r.datos || {}); guardar_(rec); return vistaCandidato(rec); },
   'cand.enviar': function (r) {
     var rec = porToken_(r.token); enviarExpediente(rec); guardar_(rec);

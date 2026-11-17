@@ -188,6 +188,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   var ref0 = ((rec.docs.referencia.datos || {}).refs || [])[0] || {};
   z.campos([['Documentos', est(dep.docs)], ['Evaluación pre empleo', rec.lab.resultado === 'apto' ? 'APTO para trabajar' : rec.lab.resultado === 'no_apto' ? 'NO APTO' : 'Pendiente'],
     ['Referencia laboral', rec.referencia.verificada ? (rec.referencia.resultado === 'negativa' ? 'Verificada – negativa' : rec.referencia.resultado === 'no_localizable' ? 'No localizable' : 'Verificada – positiva') : 'Pendiente'],
+    ['Evaluación del puesto', !(rec.evaluacion || {}).url ? 'No aplica' : rec.evaluacion.resultado === 'aprobado' ? 'Aprobó' + (rec.evaluacion.nota ? ' (' + rec.evaluacion.nota + ')' : '') : rec.evaluacion.resultado === 'no_aprobado' ? 'No aprobó' + (rec.evaluacion.nota ? ' (' + rec.evaluacion.nota + ')' : '') : 'Pendiente'],
     ['Relaciones / familiares en ' + cli.nombre, rec.familiares.verificado ? (rec.familiares.conflicto ? 'Con conflicto' : rec.familiares.declara === 'si' ? 'Relación declarada – verificada sin conflicto' : 'Sin familiares en la empresa – verificado') : 'Pendiente']], 2);
   if (rec.referencia.verificada) z.campos([['Referencia', (ref0.nombre || '') + (ref0.cargo ? ', ' + ref0.cargo : '') + (ref0.empresa ? ' – ' + ref0.empresa : '') + (ref0.telefono ? ' · ' + ref0.telefono : '')],
     ['Comentarios de la referencia', rec.referencia.comentarios]], 1);

@@ -9,7 +9,7 @@ Portal de depuración y completación de expedientes para personal **subcontrata
 
 1. En el panel, **+ Nuevo candidato**: cliente, nombre, teléfono, posición, salario y sexo (uso interno).
 2. Botón **Enviar por WhatsApp**: el mensaje sale listo con su enlace.
-3. El candidato completa 11 pasos en orden desde su celular. Ve sus condiciones y su plazo de 3 días.
+3. El candidato completa 11 pasos en orden desde su celular. Ve sus condiciones y su plazo de 2 días.
 4. En el panel usted ve en qué etapa está cada candidato: *Enlace enviado → Completando x/11 → En depuración → Expediente listo → Enviado al cliente*.
 5. Revisa cada documento (✓ aprobar / ✕ rechazar con motivo; el candidato ve el motivo y lo vuelve a subir).
 6. Depuración: **evaluación pre empleo**, **referencia laboral** y **familiares en la empresa**.

@@ -93,6 +93,7 @@
       '<div class="campo"><label>Sexo · uso interno *</label><div class="radios" style="padding-top:8px"><label><input type="radio" name="n_sexo" value="F"> Femenino</label><label><input type="radio" name="n_sexo" value="M"> Masculino</label></div></div></div>' +
       '<p class="tiny muted">El sexo solo define la evaluación de laboratorio. El candidato nunca ve el tipo de prueba.</p>' +
       '<div class="campo" style="max-width:320px"><label>Fecha de vencimiento de la cédula</label><input type="date" id="n_cedvence"></div>' +
+      '<div class="grid g2"><div class="campo"><label>Enlace de evaluación del puesto (opcional)</label><input id="n_evalurl" type="url" placeholder="https://…"></div><div class="campo"><label>Nombre de la evaluación</label><input id="n_evalnom" placeholder="Ej.: Prueba técnica QA"></div></div>' +
       '<button class="btn pri lg" id="crear">Crear y generar enlace</button></div>' +
       '<aside id="cedPrev" class="ced-prev hidden"></aside></div><div id="creado"></div>';
     function prellenar() { var v = CLIENTES[$('#n_cliente').value].vacante; $('#n_posicion').value = v.posicion; $('#n_salario').value = v.salario; $('#n_contrato').value = v.contratoMeses; }
@@ -109,7 +110,8 @@
     $('#crear').onclick = async function () {
       var sx = $('input[name=n_sexo]:checked');
       var datos = { cliente: $('#n_cliente').value, posicion: $('#n_posicion').value.trim(), nombre: $('#n_nombre').value.trim(), cedula: $('#n_cedula').value.trim(), telefono: $('#n_telefono').value.trim(),
-        correo: $('#n_correo').value.trim(), salario: $('#n_salario').value.trim(), contratoMeses: $('#n_contrato').value, sexo: sx ? sx.value : '', cedulaVence: $('#n_cedvence').value };
+        correo: $('#n_correo').value.trim(), salario: $('#n_salario').value.trim(), contratoMeses: $('#n_contrato').value, sexo: sx ? sx.value : '', cedulaVence: $('#n_cedvence').value, evaluacionUrl: $('#n_evalurl').value.trim(), evaluacionNombre: $('#n_evalnom').value.trim() };
+      if (datos.evaluacionUrl && !/^https?:\/\//i.test(datos.evaluacionUrl)) return toast('El enlace de evaluación debe empezar con https://', 'mal');
       if (!datos.nombre || !datos.telefono) return toast('Falta nombre o teléfono', 'mal');
       if (!datos.posicion) return toast('Escriba la posición', 'mal');
       var limpia = function (x) { return String(x || '').replace(/\D/g, ''); };
@@ -166,7 +168,8 @@
 
     // Depuración
     h += '<div class="card"><h3>Depuración</h3><div class="semaforo">' + sem(dep.docs, 'Documentos', dep.pendientesRevision ? dep.pendientesRevision + ' por revisar' : '') + sem(dep.lab, 'Evaluación pre empleo', r.lab.resultado === 'apto' ? 'Apto' : '') +
-      sem(dep.referencia, 'Referencia laboral', '') + sem(dep.familiares, 'Familiares en ' + c.nombre, r.familiares.declara === 'si' ? 'Declaró que SÍ' : r.familiares.declara === 'no' ? 'Declaró que no' : '') + '</div>' +
+      sem(dep.referencia, 'Referencia laboral', '') + sem(dep.familiares, 'Familiares en ' + c.nombre, r.familiares.declara === 'si' ? 'Declaró que SÍ' : r.familiares.declara === 'no' ? 'Declaró que no' : '') +
+      (dep.evaluacion !== 'na' ? sem(dep.evaluacion, 'Evaluación del puesto', (r.evaluacion || {}).nota || ((r.evaluacion || {}).completadaEn ? 'Completada por el candidato' : '')) : '') + '</div>' +
       (dep.listo ? '<div class="aviso ok" style="margin-top:12px">Depuración completa. Puede descargar el expediente y enviarlo a ' + esc(c.nombre) + '.</div>' : '') +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center"><button class="btn pri" id="expPdf">⬇ Expediente completo (PDF)</button><button class="btn" id="expZip">⬇ Archivos sueltos (ZIP)</button>' + (API.demo ? '' : '<button class="btn sm" id="drive">Carpeta en Drive ↗</button>') +
       '<div class="sp"></div><select id="estado" style="max-width:210px"><option value="activo">Estado: En proceso</option><option value="listo">Estado: Expediente listo</option><option value="enviado_cliente">Estado: Enviado al cliente</option><option value="descartado">Estado: Descartado</option></select></div><div id="expProg" class="tiny muted" style="margin-top:6px"></div></div>';
@@ -200,6 +203,16 @@
       '<div style="margin-top:8px"><label class="btn sm">Subir resultado<input type="file" class="hidden" id="upRes" accept="application/pdf,image/*"></label>' + (lab.resultadoArchivo ? ' <button class="btn sm" data-ver="' + lab.resultadoArchivo.fileId + '">👁 Ver resultado</button>' : '') + '</div>' +
       '<div class="tiny muted" style="margin-top:6px">' + (lab.asistio ? 'El candidato indicó que fue el ' + esc(lab.fechaAsistencia) : 'El candidato aún no indica que fue.') + '</div></div></div>' +
       '<div class="campo" style="margin-top:10px"><label>Notas internas del laboratorio</label><input id="labNotas" value="' + esc(lab.notas) + '"></div></div>';
+
+    // Evaluación del puesto
+    var ev = r.evaluacion || {};
+    h += '<div class="card"><h3>Evaluación del puesto</h3><p class="small muted">Pegue el enlace de la prueba. El candidato lo verá como el paso 4 y la abrirá cuando esté listo.</p>' +
+      '<div class="grid g2"><div class="campo"><label>Enlace de la evaluación</label><input id="evUrl" type="url" placeholder="https://…" value="' + esc(ev.url || '') + '"></div><div class="campo"><label>Nombre</label><input id="evNom" placeholder="Ej.: Prueba técnica QA" value="' + esc(ev.nombre || '') + '"></div></div>' +
+      '<div class="campo"><label>Instrucciones para el candidato (opcional)</label><input id="evIns" placeholder="Ej.: Dura 45 minutos. Use computadora si puede." value="' + esc(ev.instrucciones || '') + '"></div>' +
+      (ev.url ? '<div class="small" style="margin-bottom:10px">' + (ev.completadaEn ? '<span class="pill ok">Completada ' + fechaHora(ev.completadaEn) + '</span>' : ev.abiertaEn ? '<span class="pill pend">Abierta ' + fechaHora(ev.abiertaEn) + ', sin terminar</span>' : '<span class="pill gris">El candidato aún no la abre</span>') + '</div>' +
+        '<div class="grid g2"><div class="campo"><label>Resultado</label><select id="evRes"><option value="">Pendiente</option><option value="aprobado"' + (ev.resultado === 'aprobado' ? ' selected' : '') + '>Aprobó</option><option value="no_aprobado"' + (ev.resultado === 'no_aprobado' ? ' selected' : '') + '>No aprobó</option></select></div>' +
+        '<div class="campo"><label>Puntaje o nota</label><input id="evNota" placeholder="Ej.: 85/100" value="' + esc(ev.nota || '') + '"></div></div>' : '') +
+      '<button class="btn pri sm" id="evGuardar">Guardar evaluación</button></div>';
 
     // Referencia
     var rf = r.referencia, F = rf.formulario || {}, r0 = refs[0] || {};
@@ -283,6 +296,12 @@
     $('#refPdf').onclick = async function () {
       var copia = JSON.parse(JSON.stringify(r)); copia.referencia.formulario = leerRef();
       try { descargar(new Blob([await pdfReferencia(copia)], { type: 'application/pdf' }), 'Referencia laboral - ' + r.nombre + '.pdf'); } catch (e) { toast(e.message, 'mal'); }
+    };
+    $('#evGuardar').onclick = function () {
+      var url = $('#evUrl').value.trim(); if (url && !/^https?:\/\//i.test(url)) return toast('El enlace debe empezar con https://', 'mal');
+      var cambios = [['evaluacion.url', url], ['evaluacion.nombre', $('#evNom').value.trim()], ['evaluacion.instrucciones', $('#evIns').value.trim()]];
+      if ($('#evRes')) cambios.push(['evaluacion.resultado', $('#evRes').value], ['evaluacion.nota', $('#evNota').value.trim()]);
+      cambiar(cambios, 'Evaluación guardada');
     };
     $('#famGuardar').onclick = function () { cambiar([['familiares.verificado', $('#famVer').checked], ['familiares.conflicto', $('#famCon').checked], ['familiares.notas', $('#famNotas').value]], 'Guardado'); };
     $('#datosGuardar').onclick = function () {

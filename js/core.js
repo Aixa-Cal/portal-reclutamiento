@@ -8,7 +8,7 @@ var EMPRESA = {
   nombre: 'Asesores Técnicos Empresariales',
   razon: 'Asesores Técnicos Empresariales, SRL',
   firmaRRHH: 'RRHH – Asesores Técnicos Empresariales, SRL',
-  plazoDias: 3,
+  plazoDias: 2,
   colores: { pri: '#1350D6', osc: '#0B3AA8', suave: '#EAF1FF' }
 };
 
@@ -66,7 +66,7 @@ var DOCS = [
 ];
 
 /* Orden en que el candidato ve los pasos: cédula, y luego lo que toma tiempo (referencia y laboratorio). */
-var ORDEN_CANDIDATO = ['cedula', 'referencia', 'laboratorio', 'foto', 'solicitud', 'declaracion', 'estudios', 'conducta', 'banco', 'ars', 'covid'];
+var ORDEN_CANDIDATO = ['cedula', 'referencia', 'laboratorio', 'evaluacion', 'foto', 'solicitud', 'declaracion', 'estudios', 'conducta', 'banco', 'ars', 'covid'];
 
 function docPorId(id) { for (var i = 0; i < DOCS.length; i++) if (DOCS[i].id === id) return DOCS[i]; return null; }
 
@@ -112,6 +112,7 @@ function nuevoCandidato(d) {
            asistio: false, fechaAsistencia: '', resultado: '', resultadoArchivo: null, notas: '' },
     referencia: { verificada: false, resultado: '', fecha: '', contacto: '', comentarios: '', verificadoPor: '' },
     familiares: { declara: '', detalle: '', verificado: false, conflicto: false, notas: '' },
+    evaluacion: d.evaluacionUrl ? { url: String(d.evaluacionUrl).trim(), nombre: String(d.evaluacionNombre || '').trim() } : {},
     notas: '',
     historial: []
   };
@@ -172,9 +173,10 @@ function depuracion(rec) {
   var lab = rec.lab.resultado === 'apto' ? 'ok' : (rec.lab.resultado === 'no_apto' ? 'mal' : 'pendiente');
   var ref = rec.referencia.verificada ? (rec.referencia.resultado === 'negativa' ? 'mal' : 'ok') : 'pendiente';
   var fam = rec.familiares.verificado ? (rec.familiares.conflicto ? 'mal' : 'ok') : 'pendiente';
-  var docs = docsOk ? 'ok' : 'pendiente';
-  return { docs: docs, pendientesRevision: pendientesRevision, lab: lab, referencia: ref, familiares: fam,
-           listo: docs === 'ok' && lab === 'ok' && ref === 'ok' && fam === 'ok' };
+  var docs = docsOk ? 'ok' : 'pendiente', ev = rec.evaluacion || {};
+  var eva = !ev.url ? 'na' : ev.resultado === 'aprobado' ? 'ok' : ev.resultado === 'no_aprobado' ? 'mal' : 'pendiente';
+  return { docs: docs, pendientesRevision: pendientesRevision, lab: lab, referencia: ref, familiares: fam, evaluacion: eva,
+           listo: docs === 'ok' && lab === 'ok' && ref === 'ok' && fam === 'ok' && (eva === 'ok' || eva === 'na') };
 }
 
 function etapa(rec) {
@@ -205,7 +207,9 @@ function vistaCandidato(rec) {
   });
   return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
-           lab: { listo: !!rec.lab.referimiento, referimiento: !!rec.lab.referimientoArchivo, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia } };
+           lab: { listo: !!rec.lab.referimiento, referimiento: !!rec.lab.referimientoArchivo, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia },
+           evaluacion: rec.evaluacion && rec.evaluacion.url ? { url: rec.evaluacion.url, nombre: rec.evaluacion.nombre || '', instrucciones: rec.evaluacion.instrucciones || '',
+             abierta: !!rec.evaluacion.abiertaEn, completada: !!rec.evaluacion.completadaEn } : null };
 }
 function limpiarDatosCand(d) { var o = {}; for (var k in (d || {})) if (k !== 'formulario') o[k] = d[k]; return o; }
 
@@ -259,6 +263,15 @@ function aplicarDatos(rec, docId, datos) {
   d.actualizado = ahoraISO(); rec.actualizado = ahoraISO();
 }
 
+function aplicarEvaluacion(rec, accion) {
+  exigirAbierto(rec);
+  var ev = rec.evaluacion || {}; if (!ev.url) throw new Error('No tiene evaluación asignada.');
+  if (accion === 'abrir') { if (!ev.abiertaEn) { ev.abiertaEn = ahoraISO(); registrar(rec, 'Candidato abrió la evaluación del puesto'); } }
+  else if (accion === 'completar') { ev.completadaEn = ahoraISO(); registrar(rec, 'Candidato indicó que completó la evaluación del puesto'); }
+  else throw new Error('Acción no válida');
+  rec.evaluacion = ev; rec.actualizado = ahoraISO();
+}
+
 function enviarExpediente(rec) {
   exigirAbierto(rec);
   var faltan = DOCS.filter(function (doc) { return doc.tipo !== 'laboratorio' && !pasoHecho(rec, doc.id); });
@@ -272,11 +285,11 @@ var ASPECTOS_REF = ['Puntualidad', 'Responsabilidad', 'Calidad del trabajo', 'Co
 var NIVELES_REF = ['Excelente', 'Muy bueno', 'Bueno', 'Aceptable', 'Deficiente'];
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var RUTAS_ADMIN = /^(nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;
-  for (var i = 0; i < p.length - 1; i++) o = o[p[i]];
+  for (var i = 0; i < p.length - 1; i++) { if (o[p[i]] == null) o[p[i]] = {}; o = o[p[i]]; }
   o[p[p.length - 1]] = valor;
   if (ruta === 'sexo') rec.lab.prueba = pruebaLaboratorio(valor);
   if (ruta === 'lab.referimiento' && valor) rec.lab.referimientoEn = ahoraISO();

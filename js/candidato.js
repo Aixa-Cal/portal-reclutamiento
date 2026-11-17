@@ -16,7 +16,7 @@
   function estadoPasos() {
     var actual = null, bloqueadoDesde = null;
     ORDEN_CANDIDATO.forEach(function (id) {
-      var d = V.docs[id];
+      var d = V.docs[id]; if (!d) return;
       if (!d.hecho && actual === null && id !== 'laboratorio') actual = id;
     });
     return { actual: actual, bloqueadoDesde: bloqueadoDesde };
@@ -25,8 +25,9 @@
   /* Después de completar un paso, abre el siguiente pendiente (sin devolverlo atrás). */
   function siguientePaso(desde) {
     if (desde && V.docs[desde] && !V.docs[desde].hecho) return desde;
+    if (desde === 'evaluacion' && V.evaluacion && !V.evaluacion.completada) return desde;
     var i0 = Math.max(0, ORDEN_CANDIDATO.indexOf(desde)), n = ORDEN_CANDIDATO.length;
-    for (var k = 1; k <= n; k++) { var id = ORDEN_CANDIDATO[(i0 + k) % n]; if (!V.docs[id].hecho && id !== 'laboratorio') return id; }
+    for (var k = 1; k <= n; k++) { var id = ORDEN_CANDIDATO[(i0 + k) % n]; if (V.docs[id] && !V.docs[id].hecho && id !== 'laboratorio') return id; }
     return '';
   }
 
@@ -59,7 +60,8 @@
 
     html += '<div class="card" style="padding:14px 18px"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><b>Su avance</b><span>' + p.hechos + ' de ' + p.total + ' pasos</span></div><div class="barra"><i style="width:' + p.pct + '%"></i></div></div>';
 
-    ORDEN_CANDIDATO.forEach(function (id, i) {
+    ORDEN_CANDIDATO.filter(function (id) { return id !== 'evaluacion' || V.evaluacion; }).forEach(function (id, i) {
+      if (id === 'evaluacion') { html += pasoEvaluacion(i + 1); return; }
       var doc = docPorId(id), d = V.docs[id], num = i + 1;
       var cls = d.estado === 'rechazado' ? 'rech' : d.hecho ? 'hecho' : (ep.actual === doc.id ? 'actual' : '');
       var sub = d.estado === 'rechazado' ? '<small style="color:var(--mal)">Debe corregirlo</small>' : d.hecho ? '<small class="muted">' + (d.estado === 'aprobado' ? (id === 'cedula' ? 'Ya la tenemos' : 'Aprobado') : 'Recibido') + '</small>' :
@@ -83,6 +85,21 @@
     if (!d.archivos.length) return '';
     return '<div class="archivos">' + d.archivos.map(function (a) { return '<span class="pill ok">📎 ' + esc(a.nombre) + '</span>'; }).join('') + '</div>';
   }
+  function pasoEvaluacion(num) {
+    var ev = V.evaluacion, ab = abierto === 'evaluacion';
+    var sub = ev.completada ? '<small class="muted">Completada</small>' : '<small style="color:var(--pend);font-weight:600">Hágala cuando esté listo/a</small>';
+    var body = '';
+    if (ab) {
+      body = ev.completada ? '<div class="aviso ok">¡Gracias! Ya nos indicó que completó su evaluación. Nosotros revisamos el resultado.</div>' :
+        '<p class="small">' + (ev.instrucciones ? esc(ev.instrucciones) : 'Es una evaluación sobre la posición de <b>' + esc(V.vacante.posicion || '') + '</b>.') + '</p>' +
+        '<ol class="small"><li>Busque un lugar tranquilo y con buena señal de internet.</li><li>Cuando esté listo/a, toque <b>Abrir evaluación</b>.</li><li>Al terminar, regrese aquí y toque <b>Ya la completé</b>.</li></ol>' +
+        '<p><a class="btn pri block lg" href="' + esc(ev.url) + '" target="_blank" rel="noopener" data-abrireval>Abrir evaluación' + (ev.nombre ? ': ' + esc(ev.nombre) : '') + ' ↗</a></p>' +
+        '<button class="btn block" data-evalok' + (ev.abierta ? '' : ' disabled title="Primero abra la evaluación"') + '>Ya la completé</button>';
+    }
+    return '<div class="paso ' + (ev.completada ? 'hecho' : '') + (ab ? ' abierto' : '') + '" data-paso="evaluacion"><div class="paso-h" data-abrir="evaluacion"><div class="num">' + (ev.completada ? '✓' : num) + '</div><div class="paso-t">Evaluación del puesto' + sub + '</div><span class="muted">' + (ab ? '▴' : '▾') + '</span></div>' +
+      '<div class="paso-b">' + body + '</div></div>';
+  }
+
   function zonaLados(doc, d) {
     var porLado = {}; d.archivos.forEach(function (x) { if (x.lado) porLado[x.lado] = x; });
     return '<div class="lados">' + doc.lados.map(function (lado, i) {
@@ -185,6 +202,9 @@
     var env = $('#enviar'); if (env) env.onclick = function () { accion(function () { return API.call('cand.enviar', { token: token }); }, '¡Gracias! Expediente enviado.'); };
     var paso = $('.paso.abierto'); if (!paso) return;
     var docId = paso.getAttribute('data-paso'), doc = docPorId(docId), d = V.docs[docId];
+    var ae = $('[data-abrireval]', paso); if (ae) ae.addEventListener('click', function () { var b0 = $('[data-evalok]'); if (b0) { b0.disabled = false; b0.removeAttribute('title'); } API.call('cand.evaluacion', { token: token, accion: 'abrir' }).then(function (nv) { V = nv; var b = $('[data-evalok]'); if (b) { b.disabled = false; b.removeAttribute('title'); } }).catch(function () {}); });
+    var eo = $('[data-evalok]', paso); if (eo) eo.onclick = function () { accion(function () { return API.call('cand.evaluacion', { token: token, accion: 'completar' }); }, '¡Gracias! Evaluación completada'); };
+    if (!doc) return;
 
     $$('[data-subir]', paso).forEach(function (input) {
       input.onchange = function () {
