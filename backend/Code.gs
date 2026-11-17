@@ -225,8 +225,11 @@ var DOCS = [
     noAplicaMsg: 'No se preocupe. Nosotros le haremos la solicitud de afiliación a una ARS cuando ingrese.' },
   { id: 'laboratorio', n: 9, titulo: 'Evaluación pre empleo', tipo: 'laboratorio' },
   { id: 'referencia', n: 10, titulo: 'Contacto de su anterior supervisor', tipo: 'referencia' },
-  { id: 'covid', n: 11, titulo: 'Constancia de vacunación Covid-19', tipo: 'archivo', max: 2,
-    ayuda: 'Puede ser una imagen o captura de pantalla, siempre que se lea bien.' }
+  { id: 'covid', n: 11, titulo: 'Constancia de vacunación Covid-19 (opcional)', corto: 'Vacuna Covid-19', tipo: 'archivo', max: 2,
+    ayuda: 'No es obligatoria. Si la tiene, súbala: puede ser una foto de la tarjeta o una captura legible. Si la perdió, puede ver su certificado digital en la página del Gobierno con su cédula.',
+    enlace: { texto: 'Ver mi certificado digital (Vacúnate RD)', url: 'https://vacunate.gob.do' },
+    noAplica: 'No la tengo',
+    noAplicaMsg: 'Está bien, no es obligatoria. Puede seguir con su proceso.' }
 ];
 
 /* Orden en que el candidato ve los pasos: cédula, y luego lo que toma tiempo (referencia y laboratorio). */

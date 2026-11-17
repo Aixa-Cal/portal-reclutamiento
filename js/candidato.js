@@ -52,7 +52,7 @@
       '<li>Suba cada documento en su paso, uno por uno. Si un documento se le atrasa (por ejemplo, la buena conducta), siga con los demás y súbalo luego.</li>' +
       '<li>Los documentos deben estar <b>escaneados, claros y legibles</b>. Puede usar la app gratis <b>CamScanner</b> u otra parecida.</li>' +
       (c.firma === 'manuscrita' ? '<li>Los formularios se descargan, se imprimen, se completan y se <b>firman a mano</b>.</li>' : '<li>Los formularios se llenan aquí mismo y se firman con su dedo en la pantalla.</li>') +
-      '<li>La constancia de vacunación Covid-19 puede ser una imagen o captura legible.</li>' +
+      '<li>La constancia de vacunación Covid-19 es opcional. Si la tiene, puede ser una imagen o captura legible.</li>' +
       '<li>Documentos borrosos, incompletos o sin firma retrasan su proceso.</li>' +
       '<li>Mientras antes complete su expediente, más rápido podremos enviarlo a ' + esc(c.nombre) + ' para coordinar su posible fecha de ingreso.</li>' +
       '<li class="muted">Sus datos y documentos se usan solo para su proceso de contratación y se comparten únicamente con ' + esc(c.nombre) + '.</li></ol></details></div>';
