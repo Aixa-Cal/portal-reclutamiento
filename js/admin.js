@@ -1,6 +1,6 @@
 /* Panel de administración RRHH */
 (function () {
-  var app = $('#app'), cfg = window.PORTAL_CONFIG || {}, KEY = sessionStorage.getItem('ate_admin_key') || '';
+  var app = $('#app'), cfg = window.PORTAL_CONFIG || {}, KEY = (localStorage.getItem('ate_admin_key') || sessionStorage.getItem('ate_admin_key')) || '';
   var LISTA = [], REC = null, filtros = { cliente: '', etapa: '', q: '' };
   if (API.demo) $('#demo').classList.remove('hidden');
 
@@ -31,10 +31,10 @@
   function login() {
     $('#nav').classList.add('hidden'); $('#salir').classList.add('hidden');
     app.innerHTML = '<div class="card login"><h2>Entrar al panel</h2><p class="muted small">Solo para RRHH.</p><div class="campo"><label>Clave</label><input type="password" id="clave" autofocus></div><button class="btn pri block" id="entrar">Entrar</button></div>';
-    async function entrar() { KEY = $('#clave').value; try { LISTA = await call('admin.lista'); sessionStorage.setItem('ate_admin_key', KEY); inicio(); } catch (e) { toast(e.message, 'mal'); } }
+    async function entrar() { KEY = $('#clave').value; try { LISTA = await call('admin.lista'); localStorage.setItem('ate_admin_key', KEY); inicio(); } catch (e) { toast(e.message, 'mal'); } }
     $('#entrar').onclick = entrar; $('#clave').onkeydown = function (e) { if (e.key === 'Enter') entrar(); };
   }
-  $('#salir').onclick = function () { sessionStorage.removeItem('ate_admin_key'); KEY = ''; login(); };
+  $('#salir').onclick = function () { localStorage.removeItem('ate_admin_key'); sessionStorage.removeItem('ate_admin_key'); KEY = ''; login(); };
   $$('#nav .tab').forEach(function (t) { t.onclick = function () { $$('#nav .tab').forEach(function (x) { x.classList.remove('on'); }); t.classList.add('on'); t.getAttribute('data-vista') === 'nuevo' ? vistaNuevo() : vistaLista(); }; });
 
   async function inicio() { $('#nav').classList.remove('hidden'); $('#salir').classList.remove('hidden'); vistaLista(); }
