@@ -64,7 +64,8 @@
       var cls = d.estado === 'rechazado' ? 'rech' : d.hecho ? 'hecho' : (ep.actual === doc.id ? 'actual' : '');
       var sub = d.estado === 'rechazado' ? '<small style="color:var(--mal)">Debe corregirlo</small>' : d.hecho ? '<small class="muted">' + (d.estado === 'aprobado' ? (id === 'cedula' ? 'Ya la tenemos' : 'Aprobado') : 'Recibido') + '</small>' :
         doc.tipo === 'laboratorio' ? '<small style="color:' + (V.lab.listo ? 'var(--pend);font-weight:600' : 'var(--gris)') + '">' + (V.lab.listo ? 'Lista: vaya cuanto antes' : 'Le avisaremos cuando pueda ir') + '</small>' :
-        doc.tipo === 'referencia' ? '<small class="muted">Hágalo primero</small>' : '<small class="muted">Pendiente</small>';
+        doc.tipo === 'referencia' ? '<small class="muted">Hágalo primero</small>' :
+        (doc.lados && d.archivos.length ? '<small style="color:var(--pend);font-weight:600">Falta un lado</small>' : '<small class="muted">Pendiente</small>');
       html += '<div class="paso ' + cls + (abierto === doc.id ? ' abierto' : '') + '" data-paso="' + doc.id + '"><div class="paso-h" data-abrir="' + doc.id + '"><div class="num">' + (d.hecho ? '✓' : num) + '</div><div class="paso-t">' + esc(doc.titulo) + sub + '</div><span class="muted">' + (abierto === doc.id ? '▴' : '▾') + '</span></div>' +
         '<div class="paso-b">' + (abierto === doc.id ? cuerpo(doc, d) : '') + '</div></div>';
     });
@@ -82,7 +83,17 @@
     if (!d.archivos.length) return '';
     return '<div class="archivos">' + d.archivos.map(function (a) { return '<span class="pill ok">📎 ' + esc(a.nombre) + '</span>'; }).join('') + '</div>';
   }
+  function zonaLados(doc, d) {
+    var porLado = {}; d.archivos.forEach(function (x) { if (x.lado) porLado[x.lado] = x; });
+    return '<div class="lados">' + doc.lados.map(function (lado, i) {
+      var f = porLado[lado];
+      return '<label class="lado' + (f ? ' listo' : '') + '"><span class="lado-ico">' + (f ? '✓' : (i + 1)) + '</span><b>' + esc(lado) + '</b>' +
+        '<span class="small muted">' + (f ? 'Subido · tocar para cambiar' : 'Toque aquí para subir') + '</span>' +
+        '<input type="file" class="hidden" data-subir="lado" data-lado="' + esc(lado) + '" accept="image/*,application/pdf"></label>';
+    }).join('') + '</div>';
+  }
   function zonaSubir(doc, d) {
+    if (doc.lados) return zonaLados(doc, d);
     var max = doc.max || 1, n = d.archivos.length, acc = doc.soloImagen ? 'image/*' : 'image/*,application/pdf';
     var h = '';
     if (n && d.estado !== 'rechazado') {
@@ -105,7 +116,7 @@
       if (doc.ayuda) h += '<p class="small">' + esc(doc.ayuda) + '</p>';
       if (doc.enlace) h += '<p><a class="btn sm" href="' + doc.enlace.url + '" target="_blank" rel="noopener">' + esc(doc.enlace.texto) + ' ↗</a></p>';
       if (d.datos && d.datos.noAplica) h += '<div class="aviso ok">' + esc(doc.noAplica) + '. ' + esc(doc.noAplicaMsg) + '</div><p class="small muted">Si sí tiene el documento, puede subirlo:</p>';
-      h += archivosHtml(d) + zonaSubir(doc, d);
+      h += (doc.lados ? '' : archivosHtml(d)) + zonaSubir(doc, d);
       if (doc.noAplica && !(d.datos && d.datos.noAplica) && !d.archivos.length) h += '<p style="margin-top:10px"><button class="btn sm" data-noaplica>' + esc(doc.noAplica) + '</button></p>';
       return h;
     }
@@ -178,6 +189,7 @@
         ocupado(true);
         accion(async function () {
           var arr = []; for (var i = 0; i < files.length && i < (doc.max || 1); i++) arr.push(await prepararArchivo(files[i]));
+          if (modo === 'lado') arr = arr.slice(0, 1).map(function (x) { x.lado = input.getAttribute('data-lado'); return x; });
           return API.call('cand.subir', { token: token, doc: docId, archivos: arr, datos: datos, reemplazar: modo === 'reemplazar' });
         }, 'Documento recibido');
       };

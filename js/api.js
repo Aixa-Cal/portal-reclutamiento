@@ -34,7 +34,7 @@ var API = (function () {
     'cand.subir': async function (db, r) {
       var rec = porToken(db, r.token); exigirAbierto(rec);
       var base = (rec.docs[r.doc].estado === 'rechazado' || r.reemplazar) ? 0 : rec.docs[r.doc].archivos.length, metas = [];
-      for (var i = 0; i < (r.archivos || []).length; i++) metas.push(await guardarArch(rec, nombreArchivo(rec, r.doc, base + i, ext(r.archivos[i].nombre, r.archivos[i].mime)), r.archivos[i]));
+      var arcs = asignarLados(rec, r.doc, r.archivos || []); for (var i = 0; i < arcs.length; i++) { var mm = await guardarArch(rec, nombreArchivo(rec, r.doc, base + i, ext(arcs[i].nombre, arcs[i].mime), arcs[i].lado), arcs[i]); if (arcs[i].lado) mm.lado = arcs[i].lado; metas.push(mm); }
       aplicarSubida(rec, r.doc, metas, r.datos || {}, !!r.reemplazar); guardar(db); return vistaCandidato(rec);
     },
     'cand.datos': async function (db, r) { var rec = porToken(db, r.token); aplicarDatos(rec, r.doc, r.datos || {}); guardar(db); return vistaCandidato(rec); },
@@ -53,7 +53,7 @@ var API = (function () {
     },
     'admin.subirDoc': async function (db, r) {
       var rec = porId(db, r.id), base = rec.docs[r.doc].archivos.length, metas = [];
-      for (var i = 0; i < (r.archivos || []).length; i++) metas.push(await guardarArch(rec, nombreArchivo(rec, r.doc, base + i, ext(r.archivos[i].nombre, r.archivos[i].mime)), r.archivos[i]));
+      var arcs = asignarLados(rec, r.doc, r.archivos || []); for (var i = 0; i < arcs.length; i++) { var mm = await guardarArch(rec, nombreArchivo(rec, r.doc, base + i, ext(arcs[i].nombre, arcs[i].mime), arcs[i].lado), arcs[i]); if (arcs[i].lado) mm.lado = arcs[i].lado; metas.push(mm); }
       aplicarSubida(rec, r.doc, metas, {}, false, true); guardar(db); return rec;
     },
     'admin.archivo': async function (db, r) { var f = await fget(r.fileId); if (!f) throw new Error('Archivo no encontrado'); return f; },

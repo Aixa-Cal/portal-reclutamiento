@@ -43,7 +43,7 @@ var ACCIONES_ = {
     var rec = porToken_(r.token); exigirAbierto(rec);
     var def = docPorId(r.doc); if (!def) throw new Error('Paso no válido');
     var base = (rec.docs[r.doc].estado === 'rechazado' || r.reemplazar) ? 0 : (rec.docs[r.doc].archivos || []).length;
-    var metas = (r.archivos || []).map(function (f, i) { return guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime)), f); });
+    var metas = asignarLados(rec, r.doc, r.archivos || []).map(function (f, i) { var m = guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime), f.lado), f); if (f.lado) m.lado = f.lado; return m; });
     aplicarSubida(rec, r.doc, metas, r.datos || {}, !!r.reemplazar);
     guardar_(rec); return vistaCandidato(rec);
   },
@@ -73,7 +73,7 @@ var ACCIONES_ = {
   'admin.subirDoc': function (r) {
     var rec = porId_(r.id), def = docPorId(r.doc); if (!def) throw new Error('Documento no válido');
     var base = (rec.docs[r.doc].archivos || []).length;
-    var metas = (r.archivos || []).map(function (f, i) { return guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime)), f); });
+    var metas = asignarLados(rec, r.doc, r.archivos || []).map(function (f, i) { var m = guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime), f.lado), f); if (f.lado) m.lado = f.lado; return m; });
     aplicarSubida(rec, r.doc, metas, {}, false, true); guardar_(rec); return rec;
   },
   'admin.archivo': function (r) {
@@ -208,8 +208,8 @@ var DOCS = [
     ayuda: 'Foto de frente, con fondo blanco. Sin gorra ni lentes oscuros.' },
   { id: 'solicitud', n: 2, titulo: 'Solicitud de empleo', tipo: 'formulario', max: 3 },
   { id: 'declaracion', n: 3, titulo: 'Formulario de declaración de relaciones personales y comerciales', corto: 'Formulario de conocimiento', tipo: 'formulario', max: 3 },
-  { id: 'cedula', n: 4, titulo: 'Cédula de identidad (ambos lados)', tipo: 'archivo', max: 2,
-    ayuda: 'Suba el frente y la parte de atrás. Puede ser un solo archivo o dos.' },
+  { id: 'cedula', n: 4, titulo: 'Cédula de identidad (ambos lados)', tipo: 'archivo', max: 2, lados: ['Frente', 'Parte de atrás'],
+    ayuda: 'Suba una foto de cada lado. Que se lea bien y se vean las 4 esquinas.' },
   { id: 'estudios', n: 5, titulo: 'Constancia de estudios', tipo: 'archivo', max: 3,
     ayuda: 'Título, récord de notas o certificación del centro de estudios.' },
   { id: 'conducta', n: 6, titulo: 'Carta de buena conducta', tipo: 'archivo', max: 2,
@@ -219,8 +219,8 @@ var DOCS = [
     ayuda: 'Debe verse su nombre y su número de cuenta.',
     noAplica: 'No tengo cuenta en el Banco Popular',
     noAplicaMsg: 'Está bien. Le orientaremos para abrirla el día de su ingreso.' },
-  { id: 'ars', n: 8, titulo: 'Seguro médico (ARS)', tipo: 'archivo', max: 2,
-    ayuda: 'Si tiene ARS, suba una foto de su carnet.',
+  { id: 'ars', n: 8, titulo: 'Seguro médico (ARS)', tipo: 'archivo', max: 2, lados: ['Frente', 'Parte de atrás'],
+    ayuda: 'Si tiene ARS, suba una foto de cada lado de su carnet.',
     noAplica: 'No tengo ARS',
     noAplicaMsg: 'No se preocupe. Nosotros le haremos la solicitud de afiliación a una ARS cuando ingrese.' },
   { id: 'laboratorio', n: 9, titulo: 'Evaluación pre empleo', tipo: 'laboratorio' },
@@ -302,6 +302,10 @@ function pasoHecho(rec, docId) {
   if (def.tipo === 'referencia') { var r0 = d.datos && d.datos.refs && d.datos.refs[0]; return !!(r0 && r0.nombre && r0.telefono && r0.empresa && r0.trabajaAun); }
   if (d.datos && d.datos.noAplica) return true;
   if (def.id === 'declaracion' && !(d.datos && d.datos.familiares)) return false;
+  if (def.lados && d.estado !== 'aprobado') {
+    var ls = (d.archivos || []).map(function (a) { return a.lado; });
+    return def.lados.every(function (l) { return ls.indexOf(l) >= 0; }) || (d.archivos || []).some(function (a) { return /pdf/.test(a.mime || ''); });
+  }
   return d.archivos && d.archivos.length > 0;
 }
 
@@ -364,7 +368,7 @@ function vistaCandidato(rec) {
   DOCS.forEach(function (doc) {
     var d = rec.docs[doc.id];
     docs[doc.id] = { estado: d.estado, nota: d.estado === 'rechazado' ? d.nota : '', datos: limpiarDatosCand(d.datos),
-                     archivos: (d.archivos || []).map(function (a) { return { nombre: a.nombre }; }), hecho: pasoHecho(rec, doc.id) };
+                     archivos: (d.archivos || []).map(function (a) { return { nombre: a.nombre, lado: a.lado || '' }; }), hecho: pasoHecho(rec, doc.id) };
   });
   return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
@@ -378,8 +382,13 @@ function aplicarSubida(rec, docId, archivos, datos, reemplazar, porAdmin) {
   if (!porAdmin) exigirAbierto(rec);
   var def = docPorId(docId); if (!def || def.tipo === 'laboratorio' || def.tipo === 'referencia') throw new Error('Paso no válido');
   var d = rec.docs[docId];
-  if (reemplazar || d.estado === 'rechazado') d.archivos = [];
-  d.archivos = d.archivos.concat(archivos);
+  if (def.lados && archivos.length && archivos[0].lado) {
+    var nuevos = archivos.map(function (a) { return a.lado; });
+    d.archivos = (reemplazar ? [] : d.archivos).filter(function (a) { return nuevos.indexOf(a.lado) < 0; }).concat(archivos);
+  } else {
+    if (reemplazar || d.estado === 'rechazado') d.archivos = [];
+    d.archivos = d.archivos.concat(archivos);
+  }
   if (d.archivos.length > (def.max || 1)) d.archivos = d.archivos.slice(-(def.max || 1));
   d.datos = mezclar(d.datos || {}, datos || {}); delete d.datos.noAplica;
   d.estado = porAdmin ? 'aprobado' : 'recibido'; d.nota = ''; d.actualizado = ahoraISO();
@@ -451,7 +460,21 @@ function adminDocEstado(rec, docId, estado, nota) {
 
 function mezclar(a, b) { var o = {}, k; for (k in a) o[k] = a[k]; for (k in b) o[k] = b[k]; return o; }
 
-function nombreArchivo(rec, docId, idx, ext) {
+function nombreArchivo(rec, docId, idx, ext, lado) {
   var def = docPorId(docId), n = def ? (def.n < 10 ? '0' + def.n : def.n) : '00';
-  return n + ' - ' + (def ? (def.corto || def.titulo) : docId) + (idx > 0 ? ' (' + (idx + 1) + ')' : '') + (ext ? '.' + ext : '');
+  return n + ' - ' + (def ? (def.corto || def.titulo) : docId) + (lado ? ' - ' + lado : (idx > 0 ? ' (' + (idx + 1) + ')' : '')) + (ext ? '.' + ext : '');
+}
+
+/* Para documentos de dos lados (cédula, carnet ARS): asigna Frente / Parte de atrás si no viene indicado */
+function asignarLados(rec, docId, archivos) {
+  var def = docPorId(docId); if (!def || !def.lados) return archivos;
+  var usados = (rec.docs[docId].archivos || []).map(function (a) { return a.lado; });
+  return (archivos || []).map(function (f) {
+    if (!f.lado || def.lados.indexOf(f.lado) < 0) { f.lado = def.lados.filter(function (l) { return usados.indexOf(l) < 0; })[0] || def.lados[def.lados.length - 1]; }
+    usados.push(f.lado); return f;
+  });
+}
+function ordenarLados(def, archivos) {
+  if (!def || !def.lados) return archivos || [];
+  return (archivos || []).slice().sort(function (a, b) { return def.lados.indexOf(a.lado) - def.lados.indexOf(b.lado); });
 }

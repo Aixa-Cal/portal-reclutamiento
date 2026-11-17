@@ -42,7 +42,7 @@ var ACCIONES_ = {
     var rec = porToken_(r.token); exigirAbierto(rec);
     var def = docPorId(r.doc); if (!def) throw new Error('Paso no válido');
     var base = (rec.docs[r.doc].estado === 'rechazado' || r.reemplazar) ? 0 : (rec.docs[r.doc].archivos || []).length;
-    var metas = (r.archivos || []).map(function (f, i) { return guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime)), f); });
+    var metas = asignarLados(rec, r.doc, r.archivos || []).map(function (f, i) { var m = guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime), f.lado), f); if (f.lado) m.lado = f.lado; return m; });
     aplicarSubida(rec, r.doc, metas, r.datos || {}, !!r.reemplazar);
     guardar_(rec); return vistaCandidato(rec);
   },
@@ -72,7 +72,7 @@ var ACCIONES_ = {
   'admin.subirDoc': function (r) {
     var rec = porId_(r.id), def = docPorId(r.doc); if (!def) throw new Error('Documento no válido');
     var base = (rec.docs[r.doc].archivos || []).length;
-    var metas = (r.archivos || []).map(function (f, i) { return guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime)), f); });
+    var metas = asignarLados(rec, r.doc, r.archivos || []).map(function (f, i) { var m = guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime), f.lado), f); if (f.lado) m.lado = f.lado; return m; });
     aplicarSubida(rec, r.doc, metas, {}, false, true); guardar_(rec); return rec;
   },
   'admin.archivo': function (r) {

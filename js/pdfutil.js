@@ -198,7 +198,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
     if (doc.tipo === 'laboratorio') { if (rec.lab.resultadoArchivo) lista.push({ n: doc.n, t: doc.titulo + ' (resultado)', archivos: [rec.lab.resultadoArchivo] }); else lista.push({ n: doc.n, t: doc.titulo, nota: rec.lab.resultado === 'apto' ? 'Apto – resultado recibido del laboratorio' : 'Pendiente' }); return; }
     if (doc.tipo === 'referencia') { lista.push({ n: doc.n, t: doc.titulo, pagina: true }); return; }
     if (d.datos && d.datos.noAplica) { lista.push({ n: doc.n, t: doc.titulo, nota: 'No aplica – ' + doc.noAplica }); return; }
-    lista.push({ n: doc.n, t: doc.titulo, archivos: d.archivos || [] });
+    lista.push({ n: doc.n, t: doc.titulo, archivos: ordenarLados(doc, d.archivos) });
   });
   z.tabla(['#', 'Documento', 'Observación'], lista.map(function (x) { return [String(x.n), x.t, x.nota || (x.archivos && x.archivos.length ? x.archivos.length + ' archivo(s)' : x.pagina ? 'Incluido' : 'Falta')]; }), [0.06, 0.6, 0.34]);
   z.y -= 8; z.texto('Preparado por ' + EMPRESA.firmaRRHH, { size: 8.5, color: GRIS });
