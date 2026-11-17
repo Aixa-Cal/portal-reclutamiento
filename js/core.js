@@ -73,6 +73,8 @@ function docPorId(id) { for (var i = 0; i < DOCS.length; i++) if (DOCS[i].id ===
 /* Prueba interna de laboratorio. NUNCA se muestra al candidato. */
 function pruebaLaboratorio(sexo) { return sexo === 'F' ? 'Panel 2 + BHCG' : 'Panel 2'; }
 
+function formatoCedula(c) { var d = String(c || '').replace(/\D/g, ''); return d.length === 11 ? d.slice(0, 3) + '-' + d.slice(3, 10) + '-' + d.slice(10) : String(c || '').trim(); }
+
 function ahoraISO() { return new Date().toISOString(); }
 
 function generarToken(n) {
@@ -93,7 +95,7 @@ function nuevoCandidato(d) {
     actualizado: ahoraISO(),
     cliente: d.cliente,
     nombre: String(d.nombre).trim(),
-    cedula: String(d.cedula || '').trim(),
+    cedula: formatoCedula(d.cedula),
     cedulaVence: String(d.cedulaVence || '').trim(),
     plazoExtraDias: 0,
     tareas: { ars: false, banco: false },
@@ -291,6 +293,7 @@ function adminCambiar(rec, ruta, valor) {
   var p = ruta.split('.'), o = rec;
   for (var i = 0; i < p.length - 1; i++) { if (o[p[i]] == null) o[p[i]] = {}; o = o[p[i]]; }
   o[p[p.length - 1]] = valor;
+  if (ruta === 'cedula') rec.cedula = formatoCedula(valor);
   if (ruta === 'sexo') rec.lab.prueba = pruebaLaboratorio(valor);
   if (ruta === 'lab.referimiento' && valor) rec.lab.referimientoEn = ahoraISO();
   registrar(rec, 'Admin actualizó ' + ruta + (typeof valor === 'boolean' ? (valor ? ' ✓' : ' ✗') : (ruta === 'notas' ? '' : ': ' + String(valor).slice(0, 60))));

@@ -98,6 +98,7 @@
       '<aside id="cedPrev" class="ced-prev hidden"></aside></div><div id="creado"></div>';
     function prellenar() { var v = CLIENTES[$('#n_cliente').value].vacante; $('#n_posicion').value = v.posicion; $('#n_salario').value = v.salario; $('#n_contrato').value = v.contratoMeses; }
     $('#n_cliente').onchange = prellenar; prellenar();
+    $('#n_cedula').onblur = function () { this.value = formatoCedula(this.value); };
     $('#n_cedfile').onchange = function () {
       var box = $('#cedPrev'), fs = Array.prototype.slice.call(this.files || []).slice(0, 2);
       box.innerHTML = fs.length ? '<div class="small" style="margin-bottom:8px"><b>Cédula</b> · copie nombre, número y vencimiento</div>' : '';
