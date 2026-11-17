@@ -309,5 +309,6 @@
   function descargar(blob, nombre) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 500); }
 
   /* ---------------- Arranque ---------------- */
+  if (KEY) app.innerHTML = '<div class="vacio">Cargando…</div>';
   if (KEY) call('admin.lista').then(function (l) { LISTA = l; inicio(); }, login); else login();
 })();
