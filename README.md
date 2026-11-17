@@ -33,7 +33,7 @@ Los candidatos y sus documentos **no** se guardan en GitHub. Se guardan en **su 
 ## Instalación (una sola vez, 10 minutos)
 1. Entre a <https://script.google.com> con la cuenta de Google donde quiere guardar los expedientes → **Nuevo proyecto**.
 2. Borre lo que aparece y pegue **todo** el contenido de [`backend/Code.gs`](backend/Code.gs).
-3. En la línea `var CLAVE_ADMIN = 'CAMBIE-ESTA-CLAVE';` escriba su clave del panel. Guarde (💾).
+3. Guarde (💾). La clave del panel se crea sola: la primera clave con la que entre al panel (mínimo 8 caracteres) queda guardada.
 4. Arriba, elija la función **instalar** y presione **Ejecutar**. Acepte los permisos (Drive, Sheets y correo).
 5. **Implementar → Nueva implementación → Aplicación web**. *Ejecutar como:* Yo. *Quién tiene acceso:* Cualquier usuario. → **Implementar**. Copie la URL (termina en `/exec`).
 6. Pegue esa URL en [`config.js`](config.js) en `API_URL` (o envíesela a Claude para que la conecte).

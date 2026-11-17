@@ -3,9 +3,11 @@
    Guarda los candidatos en una hoja de Google Sheets y los
    documentos en carpetas de Google Drive (privadas, en su cuenta).
    ------------------------------------------------------------
-   ÚNICO CAMBIO OBLIGATORIO: ponga su clave de administrador aquí.
+   CLAVE DEL PANEL: la primera clave con la que entre al panel
+   (mínimo 8 caracteres) queda guardada como clave de RRHH.
+   Para cambiarla: Configuración del proyecto → Propiedades del
+   script → borre ADMIN_KEY y entre de nuevo con la clave nueva.
    ============================================================ */
-var CLAVE_ADMIN = 'CAMBIE-ESTA-CLAVE';
 var CORREO_AVISOS = ''; // vacío = se avisa al correo dueño de este script
 var URL_PANEL = 'https://aixa-cal.github.io/portal-reclutamiento/';
 
@@ -17,8 +19,12 @@ function doPost(e) {
     var req = JSON.parse(e.postData.contents);
     var a = String(req.action || '');
     if (a.indexOf('admin.') === 0) {
-      if (CLAVE_ADMIN === 'CAMBIE-ESTA-CLAVE') throw new Error('Configure su clave en Code.gs (CLAVE_ADMIN)');
-      if (req.key !== CLAVE_ADMIN) throw new Error('Clave incorrecta');
+      var guardada = props_().getProperty('ADMIN_KEY');
+      if (!guardada) {
+        if (String(req.key || '').length < 8) throw new Error('Primera vez: elija una clave de al menos 8 caracteres. Esa será su clave del panel.');
+        props_().setProperty('ADMIN_KEY', req.key); guardada = req.key;
+      }
+      if (req.key !== guardada) throw new Error('Clave incorrecta');
     }
     var fn = ACCIONES_[a];
     if (!fn) throw new Error('Acción no válida');
