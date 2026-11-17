@@ -9,7 +9,7 @@
    Para cambiarla: Configuración del proyecto → Propiedades del
    script → borre ADMIN_KEY y entre de nuevo con la clave nueva.
    ============================================================ */
-var CORREO_AVISOS = ''; // vacío = se avisa al correo dueño de este script
+var CORREO_AVISOS = 'aixa@alconia.com'; // a dónde llega el aviso cuando un candidato termina
 var URL_PANEL = 'https://aixa-cal.github.io/portal-reclutamiento/';
 
 function doGet() { return salida_({ ok: true, app: 'Portal de Reclutamiento ATE', hora: ahoraISO() }); }
