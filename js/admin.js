@@ -84,26 +84,27 @@
   /* ---------------- Nuevo candidato ---------------- */
   function vistaNuevo() {
     var ops = Object.keys(CLIENTES).map(function (id) { return '<option value="' + id + '">' + esc(CLIENTES[id].nombre) + ' — firma ' + CLIENTES[id].firma + '</option>'; }).join('');
-    app.innerHTML = '<div class="card" style="max-width:760px"><h2>Nuevo candidato</h2><p class="muted small">Se crea el expediente y un enlace único para enviárselo por WhatsApp.</p>' +
+    app.innerHTML = '<div class="nuevo-grid"><div class="card nuevo-form"><h2>Nuevo candidato</h2><p class="muted small">Se crea el expediente y un enlace único para enviárselo por WhatsApp.</p>' +
+      '<div class="campo"><label>1. Cédula del candidato (foto o PDF, opcional)</label><input type="file" id="n_cedfile" accept="image/*,application/pdf" multiple><div class="tiny muted" style="margin-top:4px">Súbala primero: se ve al lado para copiar los datos, y el candidato ya no tiene que subirla.</div></div>' +
       '<div class="grid g2"><div class="campo"><label>Cliente</label><select id="n_cliente">' + ops + '</select></div><div class="campo"><label>Posición</label><input id="n_posicion"></div></div>' +
       '<div class="grid g2"><div class="campo"><label>Nombre completo *</label><input id="n_nombre"></div><div class="campo"><label>Cédula</label><input id="n_cedula" placeholder="000-0000000-0"></div>' +
       '<div class="campo"><label>Teléfono / WhatsApp *</label><input id="n_telefono" placeholder="809-000-0000"></div><div class="campo"><label>Correo</label><input id="n_correo" type="email"></div></div>' +
       '<div class="grid g3"><div class="campo"><label>Salario mensual (RD$)</label><input id="n_salario"></div><div class="campo"><label>Contrato (meses)</label><input id="n_contrato" type="number" min="1"></div>' +
       '<div class="campo"><label>Sexo · uso interno *</label><div class="radios" style="padding-top:8px"><label><input type="radio" name="n_sexo" value="F"> Femenino</label><label><input type="radio" name="n_sexo" value="M"> Masculino</label></div></div></div>' +
       '<p class="tiny muted">El sexo solo define la evaluación de laboratorio. El candidato nunca ve el tipo de prueba.</p>' +
-      '<div class="grid g2"><div class="campo"><label>Cédula (foto o PDF, opcional)</label><input type="file" id="n_cedfile" accept="image/*,application/pdf" multiple></div><div class="campo"><label>Fecha de vencimiento de la cédula</label><input type="date" id="n_cedvence"></div></div>' +
-      '<p class="tiny muted">Si sube la cédula aquí, el candidato ya no tiene que subirla. Se verá aquí abajo para que copie los datos.</p><div id="cedPrev"></div>' +
-      '<button class="btn pri lg" id="crear">Crear y generar enlace</button></div><div id="creado"></div>';
+      '<div class="campo" style="max-width:320px"><label>Fecha de vencimiento de la cédula</label><input type="date" id="n_cedvence"></div>' +
+      '<button class="btn pri lg" id="crear">Crear y generar enlace</button></div>' +
+      '<aside id="cedPrev" class="ced-prev hidden"></aside></div><div id="creado"></div>';
     function prellenar() { var v = CLIENTES[$('#n_cliente').value].vacante; $('#n_posicion').value = v.posicion; $('#n_salario').value = v.salario; $('#n_contrato').value = v.contratoMeses; }
     $('#n_cliente').onchange = prellenar; prellenar();
     $('#n_cedfile').onchange = function () {
-      var box = $('#cedPrev'); box.innerHTML = '';
-      Array.prototype.slice.call(this.files || []).slice(0, 2).forEach(function (f) {
+      var box = $('#cedPrev'), fs = Array.prototype.slice.call(this.files || []).slice(0, 2);
+      box.innerHTML = fs.length ? '<div class="small" style="margin-bottom:8px"><b>Cédula</b> · copie nombre, número y vencimiento</div>' : '';
+      fs.forEach(function (f) {
         var u = URL.createObjectURL(f);
-        box.insertAdjacentHTML('beforeend', /pdf/.test(f.type) ? '<iframe src="' + u + '#toolbar=0&view=FitH" style="width:100%;height:420px;border:1px solid var(--linea);border-radius:12px;margin-bottom:10px"></iframe>'
-          : '<img src="' + u + '" style="width:100%;max-height:420px;object-fit:contain;border:1px solid var(--linea);border-radius:12px;margin-bottom:10px;background:#fafbff">');
+        box.insertAdjacentHTML('beforeend', /pdf/.test(f.type) ? '<iframe src="' + u + '#toolbar=0&navpanes=0&view=FitH"></iframe>' : '<img src="' + u + '" alt="Cédula">');
       });
-      if (box.innerHTML) box.insertAdjacentHTML('afterbegin', '<p class="small" style="margin:6px 0"><b>Copie de la cédula:</b> nombre completo, número y fecha de expiración. Revise que no esté vencida.</p>');
+      box.classList.toggle('hidden', !fs.length);
     };
     $('#crear').onclick = async function () {
       var sx = $('input[name=n_sexo]:checked');
