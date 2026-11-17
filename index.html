@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Portal de Reclutamiento · Panel RRHH</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%231350d6%22/%3E%3Ctext x=%2216%22 y=%2221%22 font-size=%2211%22 font-family=%22Arial%22 font-weight=%22bold%22 fill=%22white%22 text-anchor=%22middle%22%3EATE%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="demo" class="demo hidden">Modo demostración: los datos se guardan solo en este navegador. Clave: <b>demo</b>. Para usarlo de verdad, conecte Google Drive (ver README).</div>
+<header class="topbar"><div class="wrap">
+  <div class="marca"><div class="logo">ATE</div><div>Portal de Reclutamiento<small>Depuración y contratación · RRHH</small></div></div>
+  <div class="sp"></div>
+  <nav class="tabs hidden" id="nav">
+    <button class="tab on" data-vista="lista">Candidatos</button>
+    <button class="tab" data-vista="nuevo">+ Nuevo candidato</button>
+  </nav>
+  <button class="btn sm hidden" id="salir">Salir</button>
+</div></header>
+<main class="wrap" id="app"></main>
+<div id="panel" class="panel hidden"><div class="panel-in" id="panelIn"></div></div>
+<script src="config.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/api.js"></script>
+<script src="js/pdfutil.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
