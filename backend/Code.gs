@@ -241,6 +241,12 @@ var DOCS = [
 /* Orden en que el candidato ve los pasos: cédula, y luego lo que toma tiempo (referencia y laboratorio). */
 var ORDEN_CANDIDATO = ['cedula', 'referencia', 'laboratorio', 'evaluacion', 'foto', 'solicitud', 'declaracion', 'estudios', 'conducta', 'banco', 'ars', 'covid'];
 
+/* Número de paso tal como lo ve el candidato */
+function numeroPaso(rec, id) {
+  var orden = ORDEN_CANDIDATO.filter(function (x) { return x !== 'evaluacion' || (rec.evaluacion && rec.evaluacion.url); });
+  return orden.indexOf(id) + 1;
+}
+
 function docPorId(id) { for (var i = 0; i < DOCS.length; i++) if (DOCS[i].id === id) return DOCS[i]; return null; }
 
 /* Prueba interna de laboratorio. NUNCA se muestra al candidato. */

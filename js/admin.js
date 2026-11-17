@@ -11,20 +11,48 @@
   function wa(rec, texto) { return 'https://wa.me/' + telWa(rec.telefono) + '?text=' + encodeURIComponent(texto); }
   function copiar(t) { navigator.clipboard.writeText(t).then(function () { toast('Copiado', 'ok'); }, function () { prompt('Copie:', t); }); }
 
+  function fechaLimite(rec) { return new Date(venceEn(rec)).toLocaleString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }); }
   function msgInvitacion(rec) {
-    var c = CLIENTES[rec.cliente];
-    return 'Hola ' + primer(rec.nombre) + ', le saluda RRHH de ' + EMPRESA.nombre + '.\n\n' +
-      'Tenemos el placer de informarle que ' + c.nombre + ' desea continuar con la fase de depuración y completación de su expediente para la posición de *' + rec.vacante.posicion + '*.\n\n' +
-      'Complete sus documentos aquí, paso a paso:\n' + enlace(rec) + '\n\n' +
-      'Lo primero: suba su cédula (paso 1) y envíenos el contacto de su supervisor anterior (paso 2). Cuando le avisemos, vaya cuanto antes a Laboratorios Referencia para su evaluación pre empleo.\n\n' +
-      'Tiene un plazo de ' + EMPRESA.plazoDias + ' días. Mientras antes lo complete, más rápido avanzamos con su posible fecha de ingreso.\n\n' + EMPRESA.firmaRRHH;
+    var c = CLIENTES[rec.cliente], cedOk = pasoHecho(rec, 'cedula'), labOk = !!rec.lab.referimiento, ev = rec.evaluacion || {};
+    var pasos = [];
+    pasos.push(numeroPaso(rec, 'cedula') + '. ' + (cedOk ? 'Su cédula ya la tenemos ✓' : 'Suba su *cédula* por ambos lados.'));
+    pasos.push(numeroPaso(rec, 'referencia') + '. Escriba el contacto de su *supervisor anterior*.');
+    pasos.push(numeroPaso(rec, 'laboratorio') + '. *Evaluación pre empleo:* ' + (labOk ? 'ya está lista. Descargue su referimiento y vaya *cuanto antes* a Laboratorios Referencia con su cédula. No paga nada.' : 'le avisaremos cuando pueda ir. Cuando le avisemos, vaya *cuanto antes* a Laboratorios Referencia.'));
+    if (ev.url) pasos.push(numeroPaso(rec, 'evaluacion') + '. *Evaluación del puesto:* hágala cuando esté listo/a, en un lugar tranquilo.');
+    return 'Hola *' + primer(rec.nombre) + '* 👋\n' +
+      'Le saluda RRHH de *' + EMPRESA.nombre + '*.\n\n' +
+      'Tenemos el placer de informarle que *' + c.nombre + '* desea continuar con la fase de depuración y completación de su expediente para la posición de *' + rec.vacante.posicion + '*.\n\n' +
+      '📲 *Complete su expediente aquí, paso a paso:*\n' + enlace(rec) + '\n\n' +
+      '*Empiece por aquí:*\n' + pasos.join('\n') + '\n\n' +
+      'Después suba los demás documentos que le pide el enlace.\n\n' +
+      '⏰ *Plazo: ' + EMPRESA.plazoDias + ' días* (hasta el ' + fechaLimite(rec) + ').\n' +
+      'Mientras antes lo complete, más rápido avanzamos con su posible fecha de ingreso.\n\n' +
+      '¿Tiene dudas? Responda a este mensaje.\n\n' + EMPRESA.firmaRRHH;
   }
   function msgRecordatorio(rec) {
-    var falta = DOCS.filter(function (d) { return d.tipo !== 'laboratorio' && !pasoHecho(rec, d.id); }).map(function (d) { return '• ' + d.n + '. ' + (d.corto || d.titulo) + (rec.docs[d.id].estado === 'rechazado' ? ' (corregir: ' + rec.docs[d.id].nota + ')' : ''); });
-    return 'Hola ' + primer(rec.nombre) + ', le recordamos completar su expediente para ' + CLIENTES[rec.cliente].nombre + '.\n\n' + (falta.length ? 'Le falta:\n' + falta.join('\n') + '\n\n' : '') + 'Su enlace:\n' + enlace(rec) + '\n\n' + EMPRESA.firmaRRHH;
+    var orden = ORDEN_CANDIDATO.filter(function (id) { return id !== 'laboratorio' && id !== 'evaluacion' && docPorId(id); });
+    var falta = orden.filter(function (id) { return !pasoHecho(rec, id); }).map(function (id) {
+      var d = docPorId(id); return '• Paso ' + numeroPaso(rec, id) + ': ' + (d.corto || d.titulo) + (id === 'covid' ? ' (opcional)' : '') + (rec.docs[id].estado === 'rechazado' ? ' — *corregir:* ' + rec.docs[id].nota : '');
+    });
+    var ev = rec.evaluacion || {};
+    if (ev.url && !ev.completadaEn) falta.push('• Paso ' + numeroPaso(rec, 'evaluacion') + ': Evaluación del puesto');
+    if (rec.lab.referimiento && !rec.lab.asistio) falta.push('• Paso ' + numeroPaso(rec, 'laboratorio') + ': Ir a Laboratorios Referencia (evaluación pre empleo)');
+    return 'Hola *' + primer(rec.nombre) + '* 👋\n' +
+      'Le recordamos completar su expediente para *' + CLIENTES[rec.cliente].nombre + '*.\n\n' +
+      (falta.length ? '*Le falta:*\n' + falta.join('\n') + '\n\n' : '') +
+      '📲 *Su enlace:*\n' + enlace(rec) + '\n\n' +
+      '⏰ Su plazo vence el ' + fechaLimite(rec) + '\n\n' + EMPRESA.firmaRRHH;
   }
   function msgLab(rec) {
-    return 'Hola ' + primer(rec.nombre) + ', ya puede ir a su evaluación pre empleo. Vaya cuanto antes.\n\n• Descargue su referimiento en su enlace (paso 3) y muéstrelo en el celular o impreso.\n• Vaya a Laboratorios Referencia con su cédula.\n• Diga que va de parte de ' + EMPRESA.nombre + '.\n• No tiene que pagar nada.\n\nCuando vaya, márquelo en su enlace (paso 3):\n' + enlace(rec) + '\n\n' + EMPRESA.firmaRRHH;
+    var p = numeroPaso(rec, 'laboratorio');
+    return 'Hola *' + primer(rec.nombre) + '* 👋\n' +
+      'Su *evaluación pre empleo* ya está lista. Vaya *cuanto antes*.\n\n' +
+      '1. Abra su enlace y en el *paso ' + p + '* descargue su *referimiento*.\n' +
+      '2. Vaya a *Laboratorios Referencia* con su *cédula* y el referimiento (en el celular o impreso).\n' +
+      '3. Diga que va de parte de *' + EMPRESA.nombre + '*.\n' +
+      '4. *No tiene que pagar nada.*\n\n' +
+      '📲 ' + enlace(rec) + '\n\n' +
+      'Cuando vaya, márquelo en el paso ' + p + '.\n\n' + EMPRESA.firmaRRHH;
   }
 
   /* ---------------- Login ---------------- */
