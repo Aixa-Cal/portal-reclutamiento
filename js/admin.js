@@ -16,7 +16,7 @@
     return 'Hola ' + primer(rec.nombre) + ', le saluda RRHH de ' + EMPRESA.nombre + '.\n\n' +
       'Tenemos el placer de informarle que ' + c.nombre + ' desea continuar con la fase de depuración y completación de su expediente para la posición de *' + rec.vacante.posicion + '*.\n\n' +
       'Complete sus documentos aquí, paso a paso:\n' + enlace(rec) + '\n\n' +
-      'Lo primero: envíenos el contacto de su supervisor anterior (paso 1). Cuando le avisemos, vaya cuanto antes a Laboratorios Referencia para su evaluación pre empleo.\n\n' +
+      'Lo primero: suba su cédula (paso 1) y envíenos el contacto de su supervisor anterior (paso 2). Cuando le avisemos, vaya cuanto antes a Laboratorios Referencia para su evaluación pre empleo.\n\n' +
       'Tiene un plazo de ' + EMPRESA.plazoDias + ' días. Mientras antes lo complete, más rápido avanzamos con su posible fecha de ingreso.\n\n' + EMPRESA.firmaRRHH;
   }
   function msgRecordatorio(rec) {

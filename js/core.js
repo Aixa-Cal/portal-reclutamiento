@@ -62,8 +62,8 @@ var DOCS = [
     ayuda: 'Puede ser una imagen o captura de pantalla, siempre que se lea bien.' }
 ];
 
-/* Orden en que el candidato ve los pasos: primero lo que toma tiempo (referencia y laboratorio). */
-var ORDEN_CANDIDATO = ['referencia', 'laboratorio', 'foto', 'solicitud', 'declaracion', 'cedula', 'estudios', 'conducta', 'banco', 'ars', 'covid'];
+/* Orden en que el candidato ve los pasos: cédula, y luego lo que toma tiempo (referencia y laboratorio). */
+var ORDEN_CANDIDATO = ['cedula', 'referencia', 'laboratorio', 'foto', 'solicitud', 'declaracion', 'estudios', 'conducta', 'banco', 'ars', 'covid'];
 
 function docPorId(id) { for (var i = 0; i < DOCS.length; i++) if (DOCS[i].id === id) return DOCS[i]; return null; }
 

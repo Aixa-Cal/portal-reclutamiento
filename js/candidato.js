@@ -38,7 +38,7 @@
       html += '<div class="card"><div class="aviso ok"><b>Documentos enviados completos.</b> Gracias, ' + esc(primerNombre()) + '. Estamos revisando su expediente. Le escribiremos para los próximos pasos.</div>' +
          + ayuda() + '</div>';
     }
-    if (V.lab.listo && !V.lab.asistio && !V.cerrado) html += '<div class="aviso pend" style="font-size:.95rem"><b>Importante:</b> su evaluación pre empleo ya está lista. Vaya <b>cuanto antes</b> a Laboratorios Referencia con su cédula (paso 2). Es gratis.</div>';
+    if (V.lab.listo && !V.lab.asistio && !V.cerrado) html += '<div class="aviso pend" style="font-size:.95rem"><b>Importante:</b> su evaluación pre empleo ya está lista. Vaya <b>cuanto antes</b> a Laboratorios Referencia con su cédula (paso 3). Es gratis.</div>';
     html += '<div class="card" style="border-top:4px solid var(--azul)"><h1>Hola, ' + esc(primerNombre()) + '</h1>' +
       '<p>Tenemos el placer de informarle que <b>' + esc(c.nombre) + '</b> desea continuar con la fase de depuración y completación de su expediente.</p>' +
       '<p>La posición es <b>' + esc(V.vacante.posicion || '') + '</b>, bajo modalidad de subcontratación para ' + esc(c.nombre) + ' a través de <b>' + esc(EMPRESA.nombre) + '</b>, empresa encargada de la tercerización de este puesto.</p>' +
@@ -48,7 +48,7 @@
       '<li>Según su desempeño y los procesos internos de ' + esc(c.nombre) + ', podría ser considerado/a para futuras vacantes internas.</li></ul>' +
       (V.enviadoEn ? '' : '<div class="aviso ' + (horas < 0 ? 'mal' : horas < 24 ? 'pend' : '') + '">' + (horas < 0 ? 'Su plazo de ' + EMPRESA.plazoDias + ' días ya venció. Complete lo antes posible.' : 'Tiene hasta el <b>' + vence.toLocaleString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '</b> para completar todo (' + EMPRESA.plazoDias + ' días).') + '</div>') +
       '<details><summary style="cursor:pointer;font-weight:600;color:var(--azul)">Antes de empezar, lea esto</summary><ol class="small">' +
-      '<li><b>Empiece por los pasos 1 y 2</b>: el contacto de su supervisor anterior y la evaluación pre empleo. Son los que más tardan.</li>' +
+      '<li><b>Empiece por los pasos 1, 2 y 3</b>: su cédula, el contacto de su supervisor anterior y la evaluación pre empleo. Son los que más tardan.</li>' +
       '<li>Suba cada documento en su paso, uno por uno. Si un documento se le atrasa (por ejemplo, la buena conducta), siga con los demás y súbalo luego.</li>' +
       '<li>Los documentos deben estar <b>escaneados, claros y legibles</b>. Puede usar la app gratis <b>CamScanner</b> u otra parecida.</li>' +
       (c.firma === 'manuscrita' ? '<li>Los formularios se descargan, se imprimen, se completan y se <b>firman a mano</b>.</li>' : '<li>Los formularios se llenan aquí mismo y se firman con su dedo en la pantalla.</li>') +
