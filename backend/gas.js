@@ -19,12 +19,13 @@ function doPost(e) {
     var req = JSON.parse(e.postData.contents);
     var a = String(req.action || '');
     if (a.indexOf('admin.') === 0) {
-      var guardada = props_().getProperty('ADMIN_KEY');
+      var guardada = props_().getProperty('ADMIN_KEY'), dada = String(req.key || '').trim();
       if (!guardada) {
-        if (String(req.key || '').length < 8) throw new Error('Primera vez: elija una clave de al menos 8 caracteres. Esa será su clave del panel.');
-        props_().setProperty('ADMIN_KEY', req.key); guardada = req.key;
+        if (dada.length < 8) throw new Error('Primera vez: elija una clave de al menos 8 caracteres. Esa será su clave del panel.');
+        props_().setProperty('ADMIN_KEY', dada); guardada = dada;
       }
-      if (req.key !== guardada) throw new Error('Clave incorrecta');
+      // No distingue mayúsculas/minúsculas ni espacios al inicio o al final
+      if (dada.toLowerCase() !== String(guardada).trim().toLowerCase()) throw new Error('Clave incorrecta');
     }
     var fn = ACCIONES_[a];
     if (!fn) throw new Error('Acción no válida');
