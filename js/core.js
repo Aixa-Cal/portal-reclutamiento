@@ -180,7 +180,7 @@ function vistaCandidato(rec) {
     docs[doc.id] = { estado: d.estado, nota: d.estado === 'rechazado' ? d.nota : '', datos: limpiarDatosCand(d.datos),
                      archivos: (d.archivos || []).map(function (a) { return { nombre: a.nombre }; }), hecho: pasoHecho(rec, doc.id) };
   });
-  return { nombre: rec.nombre, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
+  return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
            lab: { listo: !!rec.lab.referimiento, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia } };
 }

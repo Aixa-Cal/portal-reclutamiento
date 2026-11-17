@@ -1,7 +1,7 @@
 /* Formularios digitales (firma moderna) y piezas reutilizables */
 
 function inp(name, label, o) {
-  o = o || {};
+  o = o || {}; if (o.val == null && window.PREFILL && PREFILL[name]) o.val = PREFILL[name];
   var attrs = 'name="' + name + '" ' + (o.type ? 'type="' + o.type + '" ' : '') + (o.ph ? 'placeholder="' + esc(o.ph) + '" ' : '') + (o.req ? 'data-req="1" ' : '') + (o.val ? 'value="' + esc(o.val) + '" ' : '');
   var ctl = o.options ? '<select ' + attrs + '><option value="">Seleccione…</option>' + o.options.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>' : '<input ' + attrs + '>';
   return '<div class="campo"><label>' + esc(label) + (o.req ? ' *' : '') + '</label>' + ctl + '</div>';
@@ -16,13 +16,13 @@ function repetible(name, cols, opts) {
     '<div class="filas"></div><button type="button" class="btn sm" data-agregar>+ Agregar ' + esc(opts.item || 'fila') + '</button></div>';
 }
 function filaRep(cols) {
-  var html = '<div class="fila-rep" style="grid-template-columns:repeat(' + Math.min(cols.length, 4) + ',minmax(0,1fr)) 34px">';
+  var html = '<div class="fila-rep">';
   cols.forEach(function (c) {
     var ctl = c.options ? '<select data-k="' + c.k + '"><option value=""></option>' + c.options.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>'
       : '<input data-k="' + c.k + '"' + (c.type ? ' type="' + c.type + '"' : '') + ' placeholder="' + esc(c.label) + '">';
     html += '<div><label class="tiny">' + esc(c.label) + '</label>' + ctl + '</div>';
   });
-  return html + '<button type="button" class="btn sm mal" data-quitar title="Quitar">×</button></div>';
+  return html + '<button type="button" class="quitar" data-quitar title="Quitar">×</button></div>';
 }
 function activarRepetibles(root, min) {
   $$('.repetible', root).forEach(function (r) {

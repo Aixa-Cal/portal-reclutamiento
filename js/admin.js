@@ -64,7 +64,7 @@
       '<select id="fc" style="max-width:190px"><option value="">Todos los clientes</option>' + Object.keys(CLIENTES).map(function (id) { return '<option value="' + id + '"' + (filtros.cliente === id ? ' selected' : '') + '>' + esc(CLIENTES[id].nombre) + '</option>'; }).join('') + '</select>' +
       '<select id="fe" style="max-width:200px"><option value="">Todas las etapas</option>' + [['enlace', 'Enlace enviado'], ['completando', 'Completando'], ['depuracion', 'En depuración'], ['listo', 'Expediente listo'], ['enviado_cliente', 'Enviado al cliente'], ['descartado', 'Descartado']].map(function (x) { return '<option value="' + x[0] + '"' + (filtros.etapa === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>' +
       '<div class="sp"></div><button class="btn sm" id="refrescar">↻ Actualizar</button></div>' +
-      (filas.length ? '<div style="overflow:auto"><table><thead><tr><th>Candidato</th><th>Cliente · Posición</th><th>Etapa</th><th style="width:150px">Documentos</th><th>Depuración</th><th>Plazo</th></tr></thead><tbody>' +
+      (filas.length ? '<div style="overflow:auto"><table class="lista"><thead><tr><th>Candidato</th><th>Cliente · Posición</th><th>Etapa</th><th style="width:150px">Documentos</th><th>Depuración</th><th>Plazo</th></tr></thead><tbody>' +
         filas.map(function (r) {
           var venc = !r.enviadoEn && r.estado === 'activo' && new Date(r.vence) < ahora, d = r.depuracion;
           return '<tr class="fila" data-id="' + r.id + '"><td><b>' + esc(r.nombre) + '</b><div class="tiny muted">' + esc(r.cedula || r.telefono) + '</div></td>' +

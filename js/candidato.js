@@ -183,6 +183,7 @@
     var form = $('form[data-form]', paso);
     if (form) {
       activarRepetibles(form, 1); activarSiNo(form);
+      [['cedula', V.cedula], ['telefono', V.telefono], ['correo', V.correo]].forEach(function (x) { var el = $('[name=' + x[0] + ']', form); if (el && !el.value && x[1]) el.value = x[1]; });
       var clave = 'borrador_' + token + '_' + docId;
       try { llenarForm(form, JSON.parse(localStorage.getItem(clave))); } catch (e) {}
       form.addEventListener('input', function () { try { localStorage.setItem(clave, JSON.stringify(leerForm(form))); } catch (e) {} });
