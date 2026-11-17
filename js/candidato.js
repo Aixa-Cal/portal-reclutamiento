@@ -169,12 +169,19 @@
   }
 
   async function accion(fn, okMsg) {
-    try { var nv = await fn(); if (nv) V = nv; if (okMsg) toast(okMsg, 'ok'); abierto = siguientePaso(abierto); pintar(); window.scrollTo({ top: ($('.paso.abierto') || app).offsetTop - 80, behavior: 'smooth' }); }
+    try { var nv = await fn(); if (nv) V = nv; if (okMsg) toast(okMsg, 'ok'); abierto = siguientePaso(abierto); pintar(); if (abierto) irAPaso(abierto); }
     catch (e) { ocupado(false); toast(e.message, 'mal'); }
   }
 
+  /* Deja el paso tocado justo debajo de la barra de arriba (sin saltos al final de la página) */
+  function irAPaso(id) {
+    var el = $('.paso[data-paso="' + id + '"]'); if (!el) return;
+    var barra = ($('.topbar') || { offsetHeight: 0 }).offsetHeight + 12;
+    window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.pageYOffset - barra), behavior: 'auto' });
+  }
+
   function activar() {
-    $$('[data-abrir]').forEach(function (el) { el.onclick = function () { var id = el.getAttribute('data-abrir'); abierto = abierto === id ? '' : id; pintar(); }; });
+    $$('[data-abrir]').forEach(function (el) { el.onclick = function () { var id = el.getAttribute('data-abrir'); abierto = abierto === id ? '' : id; pintar(); irAPaso(id); }; });
     var env = $('#enviar'); if (env) env.onclick = function () { accion(function () { return API.call('cand.enviar', { token: token }); }, '¡Gracias! Expediente enviado.'); };
     var paso = $('.paso.abierto'); if (!paso) return;
     var docId = paso.getAttribute('data-paso'), doc = docPorId(docId), d = V.docs[docId];
