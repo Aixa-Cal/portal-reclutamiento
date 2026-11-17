@@ -393,7 +393,11 @@ function enviarExpediente(rec) {
 }
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(nombre|cedula|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var ASPECTOS_REF = ['Puntualidad', 'Responsabilidad', 'Calidad del trabajo', 'Comportamiento', 'Trabajo en equipo', 'Confiabilidad', 'Servicio / trato al cliente', 'Iniciativa'];
+var NIVELES_REF = ['Excelente', 'Muy bueno', 'Bueno', 'Aceptable', 'Deficiente'];
+
+/* Cambios del administrador: rutas permitidas */
+var RUTAS_ADMIN = /^(nombre|cedula|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;

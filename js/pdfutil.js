@@ -151,6 +151,30 @@ async function pdfDeclaracion(d, cli, firma, meta) {
   return await z.doc.save();
 }
 
+/* ---------- Solicitud de referencias laborales ---------- */
+function dibujarReferencia(z, rec) {
+  var F = rec.referencia.formulario, refs = ((rec.docs.referencia.datos || {}).refs || []);
+  z.encabezado('Solicitud de referencias laborales', 'Candidato: ' + rec.nombre + (rec.cedula ? ' · Cédula ' + rec.cedula : '') + ' · ' + CLIENTES[rec.cliente].nombre);
+  if (!F) {
+    z.texto('Referencia pendiente de verificar. Contactos suministrados por el candidato:', { size: 9, color: GRIS });
+    refs.forEach(function (r, k) { z.seccion('Supervisor ' + (k + 1)); z.campos([['Nombre', r.nombre], ['Cargo', r.cargo], ['Empresa', r.empresa], ['Teléfono', r.telefono]], 2); });
+    return;
+  }
+  z.seccion('Datos del empleo');
+  z.campos([['Empresa', F.empresa], ['Teléfono', F.telefono], ['Período laborado', F.periodo], ['Supervisor', F.supervisor], ['Posición que ocupó', F.posicion], ['Último salario', F.salario]], 3);
+  z.seccion('Evaluación');
+  z.tabla(['Aspecto'].concat(NIVELES_REF), ASPECTOS_REF.map(function (a) { return [a].concat(NIVELES_REF.map(function (n) { return (F.calif || {})[a] === n ? 'X' : ''; })); }), [0.34, 0.132, 0.132, 0.132, 0.132, 0.132]);
+  z.campos([['Fortalezas identificadas', F.fortalezas], ['Debilidades identificadas', F.debilidades], ['Motivo de salida', F.motivo], ['¿Lo volvería a contratar?', F.recontratar]], 2);
+  z.campos([['Comentarios adicionales', F.comentarios]], 1);
+  z.seccion('Validación');
+  z.campos([['Datos suministrados por', F.suministrado], ['Posición', F.suministradoPos], ['Fecha', F.fecha], ['Resultado', { positiva: 'Positiva', negativa: 'Negativa', no_localizable: 'No localizable' }[rec.referencia.resultado] || ''],
+    ['Verificado por', (F.verificadoPor || '') + ' – ' + EMPRESA.firmaRRHH], ['Medio', 'Llamada telefónica']], 3);
+}
+async function pdfReferencia(rec) {
+  var z = await nuevoLienzo(CLIENTES[rec.cliente].colores.pri); z.pie = 'Referencia laboral · ' + rec.nombre + ' · ' + EMPRESA.razon;
+  dibujarReferencia(z, rec); return await z.doc.save();
+}
+
 /* ---------- Expediente completo para el cliente ---------- */
 async function pdfExpediente(rec, traerArchivo, progresoCb) {
   var L = PDFLib, cli = CLIENTES[rec.cliente], dep = depuracion(rec);
@@ -182,12 +206,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   var total = lista.reduce(function (s, x) { return s + (x.archivos ? x.archivos.length : 0); }, 0), hechos = 0;
   for (var i = 0; i < lista.length; i++) {
     var x = lista[i];
-    if (x.pagina) {
-      var refs = ((rec.docs.referencia.datos || {}).refs || []);
-      z.encabezado(x.n + '. ' + x.t, rec.nombre);
-      refs.forEach(function (r, k) { z.seccion('Supervisor ' + (k + 1)); z.campos([['Nombre', r.nombre], ['Cargo', r.cargo], ['Empresa', r.empresa], ['Teléfono', r.telefono]], 2); });
-      continue;
-    }
+    if (x.pagina) { dibujarReferencia(z, rec); continue; }
     for (var j = 0; j < (x.archivos || []).length; j++) {
       var a = x.archivos[j]; if (progresoCb) progresoCb(++hechos, total, x.t);
       var f = await traerArchivo(a.fileId), bytes = b64aBytes(f.b64), mime = f.mime || a.mime || '';

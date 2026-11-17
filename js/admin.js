@@ -175,13 +175,20 @@
       '<div class="campo" style="margin-top:10px"><label>Notas internas del laboratorio</label><input id="labNotas" value="' + esc(lab.notas) + '"></div></div>';
 
     // Referencia
-    var rf = r.referencia;
-    h += '<div class="card"><h3>Referencia laboral</h3>' + (refs.length ? refs.map(function (x) { return '<div class="doc-row"><div class="t"><b>' + esc(x.nombre) + '</b> <span class="muted small">' + esc([x.cargo, x.empresa].filter(Boolean).join(' · ')) + '</span><div class="small">' + esc(x.telefono) + '</div></div><a class="btn sm" href="tel:' + esc(x.telefono) + '">Llamar</a><a class="btn sm" target="_blank" href="https://wa.me/' + telWa(x.telefono) + '">WhatsApp</a></div>'; }).join('') : '<p class="muted small">El candidato todavía no envía el contacto.</p>') +
-      '<details style="margin:8px 0"><summary class="small" style="cursor:pointer;color:var(--azul)">Preguntas para la llamada</summary><ol class="small"><li>¿Confirma que trabajó con usted? ¿Desde cuándo y hasta cuándo?</li><li>¿Qué cargo tenía y qué funciones hacía?</li><li>¿Cómo era su puntualidad y asistencia?</li><li>¿Cómo era su trato con clientes y compañeros?</li><li>¿Por qué salió de la empresa?</li><li>¿Lo volvería a contratar?</li></ol></details>' +
-      '<div class="grid g3"><div class="campo"><label>Resultado</label><select id="refRes"><option value="">Pendiente</option><option value="positiva"' + (rf.resultado === 'positiva' ? ' selected' : '') + '>Positiva</option><option value="negativa"' + (rf.resultado === 'negativa' ? ' selected' : '') + '>Negativa</option><option value="no_localizable"' + (rf.resultado === 'no_localizable' ? ' selected' : '') + '>No localizable</option></select></div>' +
-      '<div class="campo"><label>Hablé con</label><input id="refCon" value="' + esc(rf.contacto) + '"></div><div class="campo"><label>Fecha</label><input type="date" id="refFec" value="' + esc(rf.fecha || new Date().toISOString().slice(0, 10)) + '"></div></div>' +
-      '<div class="campo"><label>Comentarios (aparecen en el expediente)</label><textarea id="refCom" rows="2">' + esc(rf.comentarios) + '</textarea></div>' +
-      '<button class="btn pri sm" id="refGuardar">Guardar verificación</button>' + (rf.verificada ? ' <span class="pill ok">Verificada ' + esc(rf.fecha) + '</span>' : '') + '</div>';
+    var rf = r.referencia, F = rf.formulario || {}, r0 = refs[0] || {};
+    function v(k, def) { return esc(F[k] != null ? F[k] : (def || '')); }
+    h += '<div class="card"><h3>Referencia laboral</h3>' + (refs.length ? refs.map(function (x) { return '<div class="doc-row"><div class="t"><b>' + esc(x.nombre) + '</b> <span class="muted small">' + esc([x.cargo, x.empresa].filter(Boolean).join(' · ')) + '</span><div class="small">' + esc(x.telefono) + '</div></div><a class="btn sm" href="tel:' + esc(x.telefono) + '">Llamar</a><a class="btn sm" target="_blank" href="https://wa.me/' + telWa(x.telefono) + '">WhatsApp</a></div>'; }).join('') : '<p class="muted small">El candidato todavía no envía el contacto. Puede llenar el formulario igual.</p>') +
+      '<p class="small muted" style="margin-top:10px">Llene esto mientras habla con la referencia. Se guarda como PDF "Solicitud de referencias laborales" y entra en el expediente.</p><div id="refForm">' +
+      '<div class="grid g3"><div class="campo"><label>Empresa</label><input data-rf="empresa" value="' + v('empresa', r0.empresa) + '"></div><div class="campo"><label>Teléfono</label><input data-rf="telefono" value="' + v('telefono', r0.telefono) + '"></div><div class="campo"><label>Supervisor</label><input data-rf="supervisor" value="' + v('supervisor', r0.nombre) + '"></div>' +
+      '<div class="campo"><label>Posición que ocupó</label><input data-rf="posicion" value="' + v('posicion') + '"></div><div class="campo"><label>Desde – hasta</label><input data-rf="periodo" placeholder="01/2022 – 06/2025" value="' + v('periodo') + '"></div><div class="campo"><label>Último salario</label><input data-rf="salario" value="' + v('salario') + '"></div></div>' +
+      '<div style="overflow:auto"><table class="small"><thead><tr><th>Aspecto</th>' + NIVELES_REF.map(function (n) { return '<th style="text-align:center">' + n + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      ASPECTOS_REF.map(function (asp, i) { var cal = (F.calif || {})[asp]; return '<tr><td>' + esc(asp) + '</td>' + NIVELES_REF.map(function (n) { return '<td style="text-align:center;padding:6px"><input type="radio" style="width:auto" name="cal' + i + '" data-asp="' + esc(asp) + '" value="' + n + '"' + (cal === n ? ' checked' : '') + '></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' +
+      '<div class="grid g2" style="margin-top:10px"><div class="campo"><label>Fortalezas</label><input data-rf="fortalezas" value="' + v('fortalezas') + '"></div><div class="campo"><label>Debilidades</label><input data-rf="debilidades" value="' + v('debilidades') + '"></div>' +
+      '<div class="campo"><label>Motivo de salida</label><input data-rf="motivo" value="' + v('motivo') + '"></div><div class="campo"><label>¿Lo volvería a contratar?</label><div class="radios" style="padding-top:8px"><label><input type="radio" name="recontratar" value="Sí"' + (F.recontratar === 'Sí' ? ' checked' : '') + '> Sí</label><label><input type="radio" name="recontratar" value="No"' + (F.recontratar === 'No' ? ' checked' : '') + '> No</label></div></div></div>' +
+      '<div class="campo"><label>Comentarios adicionales</label><input data-rf="comentarios" value="' + v('comentarios', rf.comentarios) + '"></div>' +
+      '<div class="grid g3"><div class="campo"><label>Datos suministrados por</label><input data-rf="suministrado" value="' + v('suministrado', rf.contacto || r0.nombre) + '"></div><div class="campo"><label>Su posición</label><input data-rf="suministradoPos" value="' + v('suministradoPos', r0.cargo) + '"></div><div class="campo"><label>Fecha</label><input type="date" data-rf="fecha" value="' + v('fecha', rf.fecha || new Date().toISOString().slice(0, 10)) + '"></div></div>' +
+      '<div class="grid g2"><div class="campo"><label>Resultado</label><select id="refRes"><option value="">Pendiente</option><option value="positiva"' + (rf.resultado === 'positiva' ? ' selected' : '') + '>Positiva</option><option value="negativa"' + (rf.resultado === 'negativa' ? ' selected' : '') + '>Negativa</option><option value="no_localizable"' + (rf.resultado === 'no_localizable' ? ' selected' : '') + '>No localizable</option></select></div><div class="campo"><label>Verificado por (RRHH)</label><input data-rf="verificadoPor" value="' + v('verificadoPor', 'Aixa Castillo') + '"></div></div></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri sm" id="refGuardar">Guardar referencia</button><button class="btn sm" id="refPdf">⬇ PDF de la referencia</button>' + (rf.verificada ? '<span class="pill ok">Verificada ' + esc(rf.fecha) + '</span>' : '') + '</div></div>';
 
     // Familiares
     var fm = r.familiares;
@@ -229,9 +236,20 @@
     $('#upRes').onchange = function () { subirLab(this, 'resultado'); };
     $('#labRes').onchange = function () { cambiar([['lab.resultado', this.value]], 'Resultado guardado'); };
     $('#labNotas').onchange = function () { cambiar([['lab.notas', this.value]]); };
+    function leerRef() {
+      var F = {}; $$('#refForm [data-rf]').forEach(function (el) { F[el.getAttribute('data-rf')] = el.value.trim(); });
+      F.calif = {}; $$('#refForm input[data-asp]:checked').forEach(function (el) { F.calif[el.getAttribute('data-asp')] = el.value; });
+      var rc = $('#refForm input[name=recontratar]:checked'); F.recontratar = rc ? rc.value : '';
+      return F;
+    }
     $('#refGuardar').onclick = function () {
       var res = $('#refRes').value; if (!res) return toast('Seleccione el resultado', 'mal');
-      cambiar([['referencia.resultado', res], ['referencia.contacto', $('#refCon').value], ['referencia.fecha', $('#refFec').value], ['referencia.comentarios', $('#refCom').value], ['referencia.verificada', true]], 'Referencia verificada');
+      var F = leerRef();
+      cambiar([['referencia.formulario', F], ['referencia.resultado', res], ['referencia.contacto', F.suministrado], ['referencia.fecha', F.fecha], ['referencia.comentarios', F.comentarios], ['referencia.verificadoPor', F.verificadoPor], ['referencia.verificada', true]], 'Referencia guardada');
+    };
+    $('#refPdf').onclick = async function () {
+      var copia = JSON.parse(JSON.stringify(r)); copia.referencia.formulario = leerRef();
+      try { descargar(new Blob([await pdfReferencia(copia)], { type: 'application/pdf' }), 'Referencia laboral - ' + r.nombre + '.pdf'); } catch (e) { toast(e.message, 'mal'); }
     };
     $('#famGuardar').onclick = function () { cambiar([['familiares.verificado', $('#famVer').checked], ['familiares.conflicto', $('#famCon').checked], ['familiares.notas', $('#famNotas').value]], 'Guardado'); };
     $('#datosGuardar').onclick = function () {
