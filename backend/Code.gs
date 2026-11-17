@@ -63,6 +63,12 @@ var ACCIONES_ = {
     registrar(rec, 'Admin subió ' + (campo === 'resultadoArchivo' ? 'resultado de laboratorio' : 'referimiento de laboratorio'));
     guardar_(rec); return rec;
   },
+  'admin.subirDoc': function (r) {
+    var rec = porId_(r.id), def = docPorId(r.doc); if (!def) throw new Error('Documento no válido');
+    var base = (rec.docs[r.doc].archivos || []).length;
+    var metas = (r.archivos || []).map(function (f, i) { return guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime)), f); });
+    aplicarSubida(rec, r.doc, metas, {}, false, true); guardar_(rec); return rec;
+  },
   'admin.archivo': function (r) {
     var f = DriveApp.getFileById(r.fileId), b = f.getBlob();
     return { nombre: f.getName(), mime: b.getContentType(), b64: Utilities.base64Encode(b.getBytes()) };
@@ -209,12 +215,15 @@ var DOCS = [
   { id: 'ars', n: 8, titulo: 'Seguro médico (ARS)', tipo: 'archivo', max: 2,
     ayuda: 'Si tiene ARS, suba una foto de su carnet.',
     noAplica: 'No tengo ARS',
-    noAplicaMsg: 'Está bien. Lo anotamos en su expediente.' },
+    noAplicaMsg: 'No se preocupe. Nosotros le haremos la solicitud de afiliación a una ARS cuando ingrese.' },
   { id: 'laboratorio', n: 9, titulo: 'Evaluación pre empleo', tipo: 'laboratorio' },
   { id: 'referencia', n: 10, titulo: 'Contacto de su anterior supervisor', tipo: 'referencia' },
   { id: 'covid', n: 11, titulo: 'Constancia de vacunación Covid-19', tipo: 'archivo', max: 2,
     ayuda: 'Puede ser una imagen o captura de pantalla, siempre que se lea bien.' }
 ];
+
+/* Orden en que el candidato ve los pasos: primero lo que toma tiempo (referencia y laboratorio). */
+var ORDEN_CANDIDATO = ['referencia', 'laboratorio', 'foto', 'solicitud', 'declaracion', 'cedula', 'estudios', 'conducta', 'banco', 'ars', 'covid'];
 
 function docPorId(id) { for (var i = 0; i < DOCS.length; i++) if (DOCS[i].id === id) return DOCS[i]; return null; }
 
@@ -242,6 +251,9 @@ function nuevoCandidato(d) {
     cliente: d.cliente,
     nombre: String(d.nombre).trim(),
     cedula: String(d.cedula || '').trim(),
+    cedulaVence: String(d.cedulaVence || '').trim(),
+    plazoExtraDias: 0,
+    tareas: { ars: false, banco: false },
     telefono: String(d.telefono || '').trim(),
     correo: String(d.correo || '').trim(),
     sexo: d.sexo,
@@ -277,7 +289,7 @@ function pasoHecho(rec, docId) {
   if (!d || !def) return false;
   if (d.estado === 'rechazado') return false;
   if (def.tipo === 'laboratorio') return !!rec.lab.asistio;
-  if (def.tipo === 'referencia') return !!(d.datos && d.datos.refs && d.datos.refs[0] && d.datos.refs[0].nombre && d.datos.refs[0].telefono);
+  if (def.tipo === 'referencia') { var r0 = d.datos && d.datos.refs && d.datos.refs[0]; return !!(r0 && r0.nombre && r0.telefono && r0.empresa && r0.trabajaAun); }
   if (d.datos && d.datos.noAplica) return true;
   if (def.id === 'declaracion' && !(d.datos && d.datos.familiares)) return false;
   return d.archivos && d.archivos.length > 0;
@@ -289,7 +301,17 @@ function progreso(rec) {
   return { hechos: h, total: DOCS.length, pct: Math.round(h * 100 / DOCS.length) };
 }
 
-function venceEn(rec) { return new Date(new Date(rec.creado).getTime() + EMPRESA.plazoDias * 86400000).toISOString(); }
+function venceEn(rec) { return new Date(new Date(rec.creado).getTime() + (EMPRESA.plazoDias + Number(rec.plazoExtraDias || 0)) * 86400000).toISOString(); }
+function cedulaVencida(rec) { return !!rec.cedulaVence && new Date(rec.cedulaVence + 'T23:59:59') < new Date(); }
+function alertas(rec) {
+  var a = [], ref = ((rec.docs.referencia.datos || {}).refs || [])[0] || {}, t = rec.tareas || {};
+  if (cedulaVencida(rec)) a.push({ t: 'Cédula vencida', mal: true });
+  if (ref.trabajaAun === 'si') a.push({ t: 'Aún trabaja con la referencia', mal: true });
+  if (rec.familiares.declara === 'si') a.push({ t: 'Familiar en la empresa', mal: true });
+  if ((rec.docs.ars.datos || {}).noAplica && !t.ars) a.push({ t: 'Afiliar a ARS' });
+  if ((rec.docs.banco.datos || {}).noAplica && !t.banco) a.push({ t: 'Abrir cuenta Popular' });
+  return a;
+}
 
 /* Revisión de depuración: lo que debe estar OK antes de enviar al cliente */
 function depuracion(rec) {
@@ -323,7 +345,7 @@ function resumen(rec) {
   return { id: rec.id, nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, cliente: rec.cliente,
            posicion: rec.vacante.posicion, creado: rec.creado, actualizado: rec.actualizado, vence: venceEn(rec),
            enviadoEn: rec.enviadoEn, estado: rec.estado, etapa: etapa(rec), progreso: p, depuracion: dep,
-           familiaresDeclara: rec.familiares.declara };
+           familiaresDeclara: rec.familiares.declara, alertas: alertas(rec) };
 }
 
 /* Lo único que ve el candidato (sin sexo, sin tipo de prueba, sin notas internas) */
@@ -342,17 +364,17 @@ function limpiarDatosCand(d) { var o = {}; for (var k in (d || {})) if (k !== 'f
 
 function exigirAbierto(rec) { if (rec.estado !== 'activo') throw new Error('Este expediente ya fue cerrado. Si necesita ayuda, escríbanos por WhatsApp.'); }
 
-function aplicarSubida(rec, docId, archivos, datos, reemplazar) {
-  exigirAbierto(rec);
+function aplicarSubida(rec, docId, archivos, datos, reemplazar, porAdmin) {
+  if (!porAdmin) exigirAbierto(rec);
   var def = docPorId(docId); if (!def || def.tipo === 'laboratorio' || def.tipo === 'referencia') throw new Error('Paso no válido');
   var d = rec.docs[docId];
   if (reemplazar || d.estado === 'rechazado') d.archivos = [];
   d.archivos = d.archivos.concat(archivos);
   if (d.archivos.length > (def.max || 1)) d.archivos = d.archivos.slice(-(def.max || 1));
   d.datos = mezclar(d.datos || {}, datos || {}); delete d.datos.noAplica;
-  d.estado = 'recibido'; d.nota = ''; d.actualizado = ahoraISO();
+  d.estado = porAdmin ? 'aprobado' : 'recibido'; d.nota = ''; d.actualizado = ahoraISO();
   if (docId === 'declaracion' && d.datos.familiares) { rec.familiares.declara = d.datos.familiares; rec.familiares.detalle = d.datos.familiaresDetalle || ''; }
-  registrar(rec, 'Candidato subió: ' + def.titulo);
+  registrar(rec, (porAdmin ? 'RRHH subió: ' : 'Candidato subió: ') + def.titulo);
 }
 
 function aplicarDatos(rec, docId, datos) {
@@ -368,7 +390,8 @@ function aplicarDatos(rec, docId, datos) {
   }
   if (def.tipo === 'referencia') {
     var refs = (datos.refs || []).filter(function (r) { return r && r.nombre; });
-    if (!refs.length || !refs[0].telefono) throw new Error('Escriba el nombre y teléfono de su supervisor');
+    if (!refs.length || !refs[0].telefono || !refs[0].empresa) throw new Error('Escriba el nombre, teléfono y empresa de su supervisor');
+    if (!refs[0].trabajaAun) throw new Error('Indique si todavía trabaja en esa empresa');
     d.datos = { refs: refs }; d.estado = 'recibido'; d.actualizado = ahoraISO();
     registrar(rec, 'Candidato envió contacto de referencia laboral');
     return;
@@ -397,7 +420,7 @@ var ASPECTOS_REF = ['Puntualidad', 'Responsabilidad', 'Calidad del trabajo', 'Co
 var NIVELES_REF = ['Excelente', 'Muy bueno', 'Bueno', 'Aceptable', 'Deficiente'];
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(nombre|cedula|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var RUTAS_ADMIN = /^(nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;

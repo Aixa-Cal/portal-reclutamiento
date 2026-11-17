@@ -16,6 +16,7 @@
     return 'Hola ' + primer(rec.nombre) + ', le saluda RRHH de ' + EMPRESA.nombre + '.\n\n' +
       'Tenemos el placer de informarle que ' + c.nombre + ' desea continuar con la fase de depuración y completación de su expediente para la posición de *' + rec.vacante.posicion + '*.\n\n' +
       'Complete sus documentos aquí, paso a paso:\n' + enlace(rec) + '\n\n' +
+      'Lo primero: envíenos el contacto de su supervisor anterior (paso 1). Cuando le avisemos, vaya cuanto antes a Laboratorios Referencia para su evaluación pre empleo.\n\n' +
       'Tiene un plazo de ' + EMPRESA.plazoDias + ' días. Mientras antes lo complete, más rápido avanzamos con su posible fecha de ingreso.\n\n' + EMPRESA.firmaRRHH;
   }
   function msgRecordatorio(rec) {
@@ -68,7 +69,7 @@
         filas.map(function (r) {
           var venc = !r.enviadoEn && r.estado === 'activo' && new Date(r.vence) < ahora, d = r.depuracion;
           return '<tr class="fila" data-id="' + r.id + '"><td><b>' + esc(r.nombre) + '</b><div class="tiny muted">' + esc(r.cedula || r.telefono) + '</div></td>' +
-            '<td>' + chipCliente(r.cliente) + '<div class="tiny muted" style="margin-top:4px">' + esc(r.posicion) + '</div></td><td>' + pillEtapa(r.etapa) + (r.familiaresDeclara === 'si' ? ' <span class="pill mal" title="Declaró familiares en la empresa">Familiar</span>' : '') + '</td>' +
+            '<td>' + chipCliente(r.cliente) + '<div class="tiny muted" style="margin-top:4px">' + esc(r.posicion) + '</div></td><td>' + pillEtapa(r.etapa) + ((r.alertas || []).map(function (x) { return ' <span class="pill ' + (x.mal ? 'mal' : 'pend') + '" style="margin-top:4px">' + esc(x.t) + '</span>'; }).join('')) + '</td>' +
             '<td><div class="tiny muted">' + r.progreso.hechos + '/' + r.progreso.total + (d.pendientesRevision ? ' · <b style="color:var(--pend)">' + d.pendientesRevision + ' por revisar</b>' : '') + '</div><div class="barra"><i style="width:' + r.progreso.pct + '%"></i></div></td>' +
             '<td style="white-space:nowrap">' + dot(d.docs, 'Docs') + ' ' + dot(d.lab, 'Lab') + ' ' + dot(d.referencia, 'Ref') + ' ' + dot(d.familiares, 'Fam') + '</td>' +
             '<td class="small">' + (r.enviadoEn ? '<span class="muted">Enviado ' + fechaCorta(r.enviadoEn) + '</span>' : '<span style="color:' + (venc ? 'var(--mal)' : 'inherit') + '">' + (venc ? 'Venció ' : 'Vence ') + fechaHora(r.vence) + '</span>') + '</td></tr>';
@@ -90,18 +91,26 @@
       '<div class="grid g3"><div class="campo"><label>Salario mensual (RD$)</label><input id="n_salario"></div><div class="campo"><label>Contrato (meses)</label><input id="n_contrato" type="number" min="1"></div>' +
       '<div class="campo"><label>Sexo · uso interno *</label><div class="radios" style="padding-top:8px"><label><input type="radio" name="n_sexo" value="F"> Femenino</label><label><input type="radio" name="n_sexo" value="M"> Masculino</label></div></div></div>' +
       '<p class="tiny muted">El sexo solo define la evaluación de laboratorio. El candidato nunca ve el tipo de prueba.</p>' +
+      '<div class="grid g2"><div class="campo"><label>Cédula (foto o PDF, opcional)</label><input type="file" id="n_cedfile" accept="image/*,application/pdf" multiple></div><div class="campo"><label>Fecha de vencimiento de la cédula</label><input type="date" id="n_cedvence"></div></div>' +
+      '<p class="tiny muted">Si sube la cédula aquí, el candidato ya no tiene que subirla.</p>' +
       '<button class="btn pri lg" id="crear">Crear y generar enlace</button></div><div id="creado"></div>';
     function prellenar() { var v = CLIENTES[$('#n_cliente').value].vacante; $('#n_posicion').value = v.posicion; $('#n_salario').value = v.salario; $('#n_contrato').value = v.contratoMeses; }
     $('#n_cliente').onchange = prellenar; prellenar();
     $('#crear').onclick = async function () {
       var sx = $('input[name=n_sexo]:checked');
       var datos = { cliente: $('#n_cliente').value, posicion: $('#n_posicion').value.trim(), nombre: $('#n_nombre').value.trim(), cedula: $('#n_cedula').value.trim(), telefono: $('#n_telefono').value.trim(),
-        correo: $('#n_correo').value.trim(), salario: $('#n_salario').value.trim(), contratoMeses: $('#n_contrato').value, sexo: sx ? sx.value : '' };
+        correo: $('#n_correo').value.trim(), salario: $('#n_salario').value.trim(), contratoMeses: $('#n_contrato').value, sexo: sx ? sx.value : '', cedulaVence: $('#n_cedvence').value };
       if (!datos.nombre || !datos.telefono) return toast('Falta nombre o teléfono', 'mal');
       if (!datos.posicion) return toast('Escriba la posición', 'mal');
+      var limpia = function (x) { return String(x || '').replace(/\D/g, ''); };
+      var dup = datos.cedula && LISTA.filter(function (x) { return limpia(x.cedula) === limpia(datos.cedula); })[0];
+      if (dup && !confirm('Ya existe un candidato con esa cédula (' + dup.nombre + ', ' + CLIENTES[dup.cliente].nombre + '). ¿Crear otro de todas formas?')) return;
+      if (datos.cedulaVence && new Date(datos.cedulaVence + 'T23:59:59') < new Date() && !confirm('Esa cédula está VENCIDA. ¿Crear el candidato de todas formas? (pídale que la renueve)')) return;
       this.disabled = true;
       try {
         var rec = await call('admin.crear', { datos: datos });
+        var cf = Array.prototype.slice.call($('#n_cedfile').files || []);
+        if (cf.length) { toast('Subiendo cédula…'); var arr = []; for (var i = 0; i < cf.length && i < 2; i++) arr.push(await prepararArchivo(cf[i])); rec = await call('admin.subirDoc', { id: rec.id, doc: 'cedula', archivos: arr }); }
         $('#creado').innerHTML = '<div class="card" style="max-width:760px"><div class="aviso ok">Expediente creado para <b>' + esc(rec.nombre) + '</b>.</div>' +
           '<div class="campo"><label>Enlace del candidato</label><input readonly value="' + esc(enlace(rec)) + '"></div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ok" target="_blank" href="' + wa(rec, msgInvitacion(rec)) + '">Enviar por WhatsApp</a><button class="btn" id="cpL">Copiar enlace</button><button class="btn" id="cpM">Copiar mensaje</button><button class="btn" id="verN">Ver expediente</button><button class="btn" id="otro">+ Otro candidato</button></div></div>';
@@ -136,7 +145,14 @@
     // Enlace y mensajes
     h += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><b>Avance del candidato</b><span>' + p.hechos + '/' + p.total + (r.enviadoEn ? ' · Envió completo ' + fechaHora(r.enviadoEn) : ' · Vence ' + fechaHora(venceEn(r))) + '</span></div><div class="barra"><i style="width:' + p.pct + '%"></i></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn sm" id="cpEnlace">Copiar enlace</button><a class="btn sm" target="_blank" href="' + esc(enlace(r)) + '">Abrir como candidato ↗</a>' +
-      '<a class="btn sm ok" target="_blank" href="' + wa(r, msgInvitacion(r)) + '">WhatsApp: invitación</a><a class="btn sm" target="_blank" href="' + wa(r, msgRecordatorio(r)) + '">WhatsApp: recordatorio</a></div></div>';
+      '<a class="btn sm ok" target="_blank" href="' + wa(r, msgInvitacion(r)) + '">WhatsApp: invitación</a><a class="btn sm" target="_blank" href="' + wa(r, msgRecordatorio(r)) + '">WhatsApp: recordatorio</a>' + (r.enviadoEn ? '' : '<button class="btn sm" id="extender">+2 días de plazo</button>') + '</div></div>';
+    var al = alertas(r);
+    if (al.length) h += '<div class="card" style="padding:14px 18px"><b class="small">Atención</b><div class="archivos">' + al.map(function (x) { return '<span class="pill ' + (x.mal ? 'mal' : 'pend') + '">' + esc(x.t) + '</span>'; }).join('') + '</div>' +
+      (cedulaVencida(r) ? '<p class="small" style="margin:6px 0 0">La cédula venció el ' + esc(r.cedulaVence) + '. Pida una cédula vigente antes de enviar el expediente.</p>' : '') + '</div>';
+    var tar = r.tareas || {}, sinArs = (r.docs.ars.datos || {}).noAplica, sinBanco = (r.docs.banco.datos || {}).noAplica;
+    if (sinArs || sinBanco) h += '<div class="card"><h3>Tareas de ingreso</h3>' +
+      (sinArs ? '<label class="check" style="margin-bottom:8px"><input type="checkbox" data-tarea="ars"' + (tar.ars ? ' checked' : '') + '> No tiene ARS: hacer la solicitud de afiliación a ARS</label>' : '') +
+      (sinBanco ? '<label class="check"><input type="checkbox" data-tarea="banco"' + (tar.banco ? ' checked' : '') + '> No tiene cuenta en Banco Popular: orientarlo para abrirla al ingresar</label>' : '') + '</div>';
 
     // Depuración
     h += '<div class="card"><h3>Depuración</h3><div class="semaforo">' + sem(dep.docs, 'Documentos', dep.pendientesRevision ? dep.pendientesRevision + ' por revisar' : '') + sem(dep.lab, 'Evaluación pre empleo', r.lab.resultado === 'apto' ? 'Apto' : '') +
@@ -157,6 +173,7 @@
       if (d.estado === 'rechazado' && d.nota) extra += ' · <span style="color:var(--mal)">' + esc(d.nota) + '</span>';
       h += '<div class="doc-row"><div class="num" style="width:28px;height:28px;font-size:.8rem">' + doc.n + '</div><div class="t"><div style="font-weight:600;font-size:.92rem">' + esc(doc.titulo) + '</div><div class="tiny muted">' + extra + '</div>' +
         ((d.archivos || []).length ? '<div class="archivos">' + d.archivos.map(function (a) { return '<button class="btn sm" data-ver="' + a.fileId + '">👁 ' + esc(a.nombre) + '</button>'; }).join('') + '</div>' : '') + '</div>' + est +
+        ((doc.tipo === 'archivo' || doc.tipo === 'formulario') ? '<label class="btn sm" title="Subir este documento yo (RRHH)">⬆<input type="file" class="hidden" data-subirdoc="' + doc.id + '" accept="image/*,application/pdf" multiple></label>' : '') +
         ((doc.tipo === 'archivo' || doc.tipo === 'formulario') && d.archivos.length && !(d.datos && d.datos.noAplica) ? '<button class="btn sm ok" data-aprobar="' + doc.id + '" title="Aprobar">✓</button><button class="btn sm mal" data-rechazar="' + doc.id + '" title="Rechazar y pedir que lo corrija">✕</button>' : '') + '</div>';
     });
     h += '</div>';
@@ -177,7 +194,7 @@
     // Referencia
     var rf = r.referencia, F = rf.formulario || {}, r0 = refs[0] || {};
     function v(k, def) { return esc(F[k] != null ? F[k] : (def || '')); }
-    h += '<div class="card"><h3>Referencia laboral</h3>' + (refs.length ? refs.map(function (x) { return '<div class="doc-row"><div class="t"><b>' + esc(x.nombre) + '</b> <span class="muted small">' + esc([x.cargo, x.empresa].filter(Boolean).join(' · ')) + '</span><div class="small">' + esc(x.telefono) + '</div></div><a class="btn sm" href="tel:' + esc(x.telefono) + '">Llamar</a><a class="btn sm" target="_blank" href="https://wa.me/' + telWa(x.telefono) + '">WhatsApp</a></div>'; }).join('') : '<p class="muted small">El candidato todavía no envía el contacto. Puede llenar el formulario igual.</p>') +
+    h += '<div class="card"><h3>Referencia laboral</h3>' + (refs.length ? refs.map(function (x) { return '<div class="doc-row"><div class="t"><b>' + esc(x.nombre) + '</b> <span class="muted small">' + esc([x.cargo, x.empresa].filter(Boolean).join(' · ')) + '</span><div class="small">' + esc(x.telefono) + (x.fechaSalida ? ' · salió ' + esc(x.fechaSalida) : '') + (x.trabajaAun === 'si' ? ' · <b style="color:var(--mal)">todavía trabaja ahí</b>' : x.trabajaAun === 'no' ? ' · <span style="color:var(--ok)">ya no trabaja ahí</span>' : '') + '</div></div><a class="btn sm" href="tel:' + esc(x.telefono) + '">Llamar</a><a class="btn sm" target="_blank" href="https://wa.me/' + telWa(x.telefono) + '">WhatsApp</a></div>'; }).join('') : '<p class="muted small">El candidato todavía no envía el contacto. Puede llenar el formulario igual.</p>') +
       '<p class="small muted" style="margin-top:10px">Llene esto mientras habla con la referencia. Se guarda como PDF "Solicitud de referencias laborales" y entra en el expediente.</p><div id="refForm">' +
       '<div class="grid g3"><div class="campo"><label>Empresa</label><input data-rf="empresa" value="' + v('empresa', r0.empresa) + '"></div><div class="campo"><label>Teléfono</label><input data-rf="telefono" value="' + v('telefono', r0.telefono) + '"></div><div class="campo"><label>Supervisor</label><input data-rf="supervisor" value="' + v('supervisor', r0.nombre) + '"></div>' +
       '<div class="campo"><label>Posición que ocupó</label><input data-rf="posicion" value="' + v('posicion') + '"></div><div class="campo"><label>Desde – hasta</label><input data-rf="periodo" placeholder="01/2022 – 06/2025" value="' + v('periodo') + '"></div><div class="campo"><label>Último salario</label><input data-rf="salario" value="' + v('salario') + '"></div></div>' +
@@ -199,8 +216,8 @@
 
     // Datos
     h += '<div class="card"><h3>Datos del candidato</h3><div class="grid g3">' +
-      [['nombre', 'Nombre'], ['cedula', 'Cédula'], ['telefono', 'Teléfono'], ['correo', 'Correo'], ['vacante.posicion', 'Posición'], ['vacante.salario', 'Salario RD$'], ['vacante.contratoMeses', 'Contrato (meses)']].map(function (x) {
-        var v = x[0].split('.').reduce(function (o, k) { return o[k]; }, r); return '<div class="campo"><label>' + x[1] + '</label><input data-campo="' + x[0] + '" value="' + esc(v) + '"></div>';
+      [['nombre', 'Nombre'], ['cedula', 'Cédula'], ['cedulaVence', 'Cédula vence (AAAA-MM-DD)'], ['telefono', 'Teléfono'], ['correo', 'Correo'], ['vacante.posicion', 'Posición'], ['vacante.salario', 'Salario RD$'], ['vacante.contratoMeses', 'Contrato (meses)']].map(function (x) {
+        var v = x[0].split('.').reduce(function (o, k) { return o == null ? '' : o[k]; }, r); if (v == null) v = ''; return '<div class="campo"><label>' + x[1] + '</label><input data-campo="' + x[0] + '" value="' + esc(v) + '"></div>';
       }).join('') + '<div class="campo"><label>Sexo (interno)</label><select data-campo="sexo"><option value="F"' + (r.sexo === 'F' ? ' selected' : '') + '>Femenino</option><option value="M"' + (r.sexo === 'M' ? ' selected' : '') + '>Masculino</option></select></div></div>' +
       '<div class="campo"><label>Notas internas</label><textarea data-campo="notas" rows="2">' + esc(r.notas) + '</textarea></div><button class="btn sm" id="datosGuardar">Guardar datos</button></div>';
 
@@ -213,6 +230,12 @@
     var r = REC;
     $('#cerrar').onclick = cerrar;
     $('#cpEnlace').onclick = function () { copiar(enlace(r)); };
+    var ext = $('#extender'); if (ext) ext.onclick = function () { cambiar([['plazoExtraDias', Number(r.plazoExtraDias || 0) + 2]], 'Plazo extendido 2 días'); };
+    $$('[data-tarea]').forEach(function (c) { c.onchange = function () { cambiar([['tareas.' + c.getAttribute('data-tarea'), c.checked]], 'Guardado'); }; });
+    $$('[data-subirdoc]').forEach(function (inp) { inp.onchange = async function () {
+      var fs = Array.prototype.slice.call(inp.files || []); if (!fs.length) return; toast('Subiendo…');
+      try { var arr = []; for (var i = 0; i < fs.length && i < 3; i++) arr.push(await prepararArchivo(fs[i])); REC = await call('admin.subirDoc', { id: r.id, doc: inp.getAttribute('data-subirdoc'), archivos: arr }); pintarDetalle(); toast('Documento guardado y aprobado', 'ok'); } catch (e) { toast(e.message, 'mal'); }
+    }; });
     $$('[data-ver]').forEach(function (b) { b.onclick = function () { verArchivo(b.getAttribute('data-ver')); }; });
     $$('[data-aprobar]').forEach(function (b) { b.onclick = async function () { try { REC = await call('admin.docEstado', { id: r.id, doc: b.getAttribute('data-aprobar'), estado: 'aprobado' }); pintarDetalle(); } catch (e) { toast(e.message, 'mal'); } }; });
     $$('[data-rechazar]').forEach(function (b) {
@@ -254,7 +277,7 @@
     $('#famGuardar').onclick = function () { cambiar([['familiares.verificado', $('#famVer').checked], ['familiares.conflicto', $('#famCon').checked], ['familiares.notas', $('#famNotas').value]], 'Guardado'); };
     $('#datosGuardar').onclick = function () {
       var cambios = []; $$('[data-campo]').forEach(function (el) {
-        var ruta = el.getAttribute('data-campo'), actual = ruta.split('.').reduce(function (o, k) { return o[k]; }, r), v = ruta === 'vacante.contratoMeses' ? Number(el.value) : el.value;
+        var ruta = el.getAttribute('data-campo'), actual = ruta.split('.').reduce(function (o, k) { return o == null ? '' : o[k]; }, r), v = ruta === 'vacante.contratoMeses' ? Number(el.value) : el.value;
         if (String(actual) !== String(v)) cambios.push([ruta, v]);
       });
       if (!cambios.length) return toast('Sin cambios'); cambiar(cambios, 'Datos guardados');

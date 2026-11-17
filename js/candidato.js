@@ -15,12 +15,19 @@
 
   function estadoPasos() {
     var actual = null, bloqueadoDesde = null;
-    DOCS.forEach(function (doc, i) {
-      var d = V.docs[doc.id];
-      if (!d.hecho && actual === null && !(doc.tipo === 'laboratorio')) actual = doc.id;
-      if (!d.hecho && bloqueadoDesde === null && doc.tipo !== 'laboratorio') bloqueadoDesde = i;
+    ORDEN_CANDIDATO.forEach(function (id) {
+      var d = V.docs[id];
+      if (!d.hecho && actual === null && id !== 'laboratorio') actual = id;
     });
     return { actual: actual, bloqueadoDesde: bloqueadoDesde };
+  }
+
+  /* Después de completar un paso, abre el siguiente pendiente (sin devolverlo atrás). */
+  function siguientePaso(desde) {
+    if (desde && V.docs[desde] && !V.docs[desde].hecho) return desde;
+    var i0 = Math.max(0, ORDEN_CANDIDATO.indexOf(desde)), n = ORDEN_CANDIDATO.length;
+    for (var k = 1; k <= n; k++) { var id = ORDEN_CANDIDATO[(i0 + k) % n]; if (!V.docs[id].hecho && id !== 'laboratorio') return id; }
+    return '';
   }
 
   function pintar() {
@@ -29,8 +36,9 @@
     var html = '';
     if (V.enviadoEn || V.cerrado) {
       html += '<div class="card"><div class="aviso ok"><b>Documentos enviados completos.</b> Gracias, ' + esc(primerNombre()) + '. Estamos revisando su expediente. Le escribiremos para los próximos pasos.</div>' +
-        (V.lab.listo && !V.lab.asistio ? '<p><b>Importante:</b> todavía le falta ir a su evaluación pre empleo (paso 9).</p>' : '') + ayuda() + '</div>';
+         + ayuda() + '</div>';
     }
+    if (V.lab.listo && !V.lab.asistio && !V.cerrado) html += '<div class="aviso pend" style="font-size:.95rem"><b>Importante:</b> su evaluación pre empleo ya está lista. Vaya <b>cuanto antes</b> a Laboratorios Referencia con su cédula (paso 2). Es gratis.</div>';
     html += '<div class="card" style="border-top:4px solid var(--azul)"><h1>Hola, ' + esc(primerNombre()) + '</h1>' +
       '<p>Tenemos el placer de informarle que <b>' + esc(c.nombre) + '</b> desea continuar con la fase de depuración y completación de su expediente.</p>' +
       '<p>La posición es <b>' + esc(V.vacante.posicion || '') + '</b>, bajo modalidad de subcontratación para ' + esc(c.nombre) + ' a través de <b>' + esc(EMPRESA.nombre) + '</b>, empresa encargada de la tercerización de este puesto.</p>' +
@@ -40,22 +48,25 @@
       '<li>Según su desempeño y los procesos internos de ' + esc(c.nombre) + ', podría ser considerado/a para futuras vacantes internas.</li></ul>' +
       (V.enviadoEn ? '' : '<div class="aviso ' + (horas < 0 ? 'mal' : horas < 24 ? 'pend' : '') + '">' + (horas < 0 ? 'Su plazo de ' + EMPRESA.plazoDias + ' días ya venció. Complete lo antes posible.' : 'Tiene hasta el <b>' + vence.toLocaleString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '</b> para completar todo (' + EMPRESA.plazoDias + ' días).') + '</div>') +
       '<details><summary style="cursor:pointer;font-weight:600;color:var(--azul)">Antes de empezar, lea esto</summary><ol class="small">' +
-      '<li>Suba cada documento en su paso. Uno por uno, en orden.</li>' +
+      '<li><b>Empiece por los pasos 1 y 2</b>: el contacto de su supervisor anterior y la evaluación pre empleo. Son los que más tardan.</li>' +
+      '<li>Suba cada documento en su paso, uno por uno. Si un documento se le atrasa (por ejemplo, la buena conducta), siga con los demás y súbalo luego.</li>' +
       '<li>Los documentos deben estar <b>escaneados, claros y legibles</b>. Puede usar la app gratis <b>CamScanner</b> u otra parecida.</li>' +
       (c.firma === 'manuscrita' ? '<li>Los formularios se descargan, se imprimen, se completan y se <b>firman a mano</b>.</li>' : '<li>Los formularios se llenan aquí mismo y se firman con su dedo en la pantalla.</li>') +
       '<li>La constancia de vacunación Covid-19 puede ser una imagen o captura legible.</li>' +
       '<li>Documentos borrosos, incompletos o sin firma retrasan su proceso.</li>' +
-      '<li>Mientras antes complete su expediente, más rápido podremos enviarlo a ' + esc(c.nombre) + ' para coordinar su posible fecha de ingreso.</li></ol></details></div>';
+      '<li>Mientras antes complete su expediente, más rápido podremos enviarlo a ' + esc(c.nombre) + ' para coordinar su posible fecha de ingreso.</li>' +
+      '<li class="muted">Sus datos y documentos se usan solo para su proceso de contratación y se comparten únicamente con ' + esc(c.nombre) + '.</li></ol></details></div>';
 
     html += '<div class="card" style="padding:14px 18px"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><b>Su avance</b><span>' + p.hechos + ' de ' + p.total + ' pasos</span></div><div class="barra"><i style="width:' + p.pct + '%"></i></div></div>';
 
-    DOCS.forEach(function (doc, i) {
-      var d = V.docs[doc.id], bloq = !V.enviadoEn && ep.bloqueadoDesde !== null && i > ep.bloqueadoDesde && doc.tipo !== 'laboratorio';
+    ORDEN_CANDIDATO.forEach(function (id, i) {
+      var doc = docPorId(id), d = V.docs[id], num = i + 1;
       var cls = d.estado === 'rechazado' ? 'rech' : d.hecho ? 'hecho' : (ep.actual === doc.id ? 'actual' : '');
       var sub = d.estado === 'rechazado' ? '<small style="color:var(--mal)">Debe corregirlo</small>' : d.hecho ? '<small class="muted">' + (d.estado === 'aprobado' ? 'Aprobado' : 'Recibido') + '</small>' :
-        doc.tipo === 'laboratorio' ? '<small class="muted">' + (V.lab.listo ? 'Lista para ir' : 'Le avisaremos') + '</small>' : bloq ? '<small class="muted">Complete el paso anterior</small>' : '<small class="muted">Pendiente</small>';
-      html += '<div class="paso ' + cls + (abierto === doc.id ? ' abierto' : '') + '" data-paso="' + doc.id + '"><div class="paso-h" data-abrir="' + doc.id + '"><div class="num">' + (d.hecho ? '✓' : doc.n) + '</div><div class="paso-t">' + esc(doc.titulo) + sub + '</div><span class="muted">' + (abierto === doc.id ? '▴' : '▾') + '</span></div>' +
-        '<div class="paso-b">' + (bloq ? '<p class="muted small">Primero complete el paso ' + DOCS[ep.bloqueadoDesde].n + '.</p>' : (abierto === doc.id ? cuerpo(doc, d) : '')) + '</div></div>';
+        doc.tipo === 'laboratorio' ? '<small style="color:' + (V.lab.listo ? 'var(--pend);font-weight:600' : 'var(--gris)') + '">' + (V.lab.listo ? 'Lista: vaya cuanto antes' : 'Le avisaremos cuando pueda ir') + '</small>' :
+        doc.tipo === 'referencia' ? '<small class="muted">Hágalo primero</small>' : '<small class="muted">Pendiente</small>';
+      html += '<div class="paso ' + cls + (abierto === doc.id ? ' abierto' : '') + '" data-paso="' + doc.id + '"><div class="paso-h" data-abrir="' + doc.id + '"><div class="num">' + (d.hecho ? '✓' : num) + '</div><div class="paso-t">' + esc(doc.titulo) + sub + '</div><span class="muted">' + (abierto === doc.id ? '▴' : '▾') + '</span></div>' +
+        '<div class="paso-b">' + (abierto === doc.id ? cuerpo(doc, d) : '') + '</div></div>';
     });
 
     if (!V.enviadoEn) {
@@ -98,7 +109,7 @@
     if (doc.tipo === 'formulario') {
       if (c.firma === 'manuscrita') {
         h += '<ol class="small"><li>Descargue el formulario.</li><li>Imprímalo, complete <b>todos los campos</b> y <b>fírmelo a mano</b>.</li><li>Escanéelo (CamScanner) y súbalo aquí. Suba todas las páginas.</li></ol>' +
-          '<p><a class="btn sm" href="' + c.plantillas[doc.id] + '" download target="_blank">⬇ Descargar formulario</a></p>';
+          '<p><a class="btn sm" href="' + c.plantillas[doc.id] + '" download target="_blank">⬇ Descargar formulario</a></p><p class="tiny muted">¿No tiene impresora? Escríbanos y le ayudamos.</p>';
         if (doc.id === 'declaracion') {
           var fd = d.datos || {};
           h += '<div class="card flat" style="padding:14px;margin:10px 0"><div class="campo"><label>¿Tiene algún familiar trabajando en ' + esc(c.nombre) + ' o para un contratista de ' + esc(c.nombre) + '? *</label><div class="radios"><label><input type="radio" name="fam" value="si"' + (fd.familiares === 'si' ? ' checked' : '') + '> Sí</label><label><input type="radio" name="fam" value="no"' + (fd.familiares === 'no' ? ' checked' : '') + '> No</label></div></div>' +
@@ -116,18 +127,19 @@
     }
     if (doc.tipo === 'laboratorio') {
       if (V.lab.asistio) return '<div class="aviso ok">Evaluación realizada el ' + esc(V.lab.fechaAsistencia) + '. Nosotros recibiremos el resultado directamente.</div>';
-      if (!V.lab.listo) return '<div class="aviso pend">Estamos preparando su evaluación pre empleo. Le avisaremos por WhatsApp cuando pueda ir. Mientras tanto, siga con los demás pasos.</div>';
+      if (!V.lab.listo) return '<div class="aviso pend">Estamos preparando su evaluación pre empleo. Le avisaremos por WhatsApp. <b>Cuando le avisemos, vaya cuanto antes</b>: sin esta evaluación no podemos enviar su expediente. Mientras tanto, siga con los demás pasos.</div>';
       return '<div class="aviso">Su evaluación pre empleo está lista.</div><ol class="small"><li>Vaya a <b>Laboratorios Referencia</b> con su <b>cédula</b>.</li><li>Diga que va de parte de <b>' + esc(EMPRESA.nombre) + '</b>.</li><li>Es una evaluación pre empleo para confirmar que está apto/a para trabajar.</li><li><b>No tiene que pagar nada.</b></li></ol>' +
         '<div class="grid g2" style="align-items:end"><div class="campo"><label>¿Qué día fue?</label><input type="date" id="labfecha" value="' + new Date().toISOString().slice(0, 10) + '"></div><div class="campo"><button class="btn pri block" data-labok>Ya me realicé la evaluación</button></div></div>';
     }
     if (doc.tipo === 'referencia') {
       var refs = (d.datos && d.datos.refs) || [];
-      function r(i) { var x = refs[i] || {}; return '<fieldset><legend>Supervisor ' + (i + 1) + (i ? ' (opcional)' : '') + '</legend><div class="grid g2">' +
-        '<div class="campo"><label>Nombre' + (i ? '' : ' *') + '</label><input data-ref="' + i + '" data-k="nombre" value="' + esc(x.nombre || '') + '"></div>' +
-        '<div class="campo"><label>Teléfono' + (i ? '' : ' *') + '</label><input type="tel" data-ref="' + i + '" data-k="telefono" value="' + esc(x.telefono || '') + '"></div>' +
-        '<div class="campo"><label>Cargo</label><input data-ref="' + i + '" data-k="cargo" value="' + esc(x.cargo || '') + '"></div>' +
-        '<div class="campo"><label>Empresa</label><input data-ref="' + i + '" data-k="empresa" value="' + esc(x.empresa || '') + '"></div></div></fieldset>'; }
-      return '<p class="small">Escriba el nombre y teléfono de su <b>supervisor en su último trabajo</b>, para fines de referencia laboral.</p>' + r(0) + r(1) + '<button class="btn pri" data-guardarref>Guardar</button>';
+      function r(i) { var x = refs[i] || {}, req = i ? '' : ' *';
+        function f(k, l, t) { return '<div class="campo"><label>' + l + req + '</label><input' + (t ? ' type="' + t + '"' : '') + ' data-ref="' + i + '" data-k="' + k + '" value="' + esc(x[k] || '') + '"></div>'; }
+        return '<fieldset><legend>' + (i ? 'Otro supervisor (opcional)' : 'Supervisor de su último trabajo') + '</legend><div class="grid g2">' +
+        f('nombre', 'Nombre del supervisor') + f('telefono', 'Teléfono', 'tel') + f('empresa', 'Empresa') + '<div class="campo"><label>Cargo del supervisor</label><input data-ref="' + i + '" data-k="cargo" value="' + esc(x.cargo || '') + '"></div></div>' +
+        '<div class="campo"><label>¿Todavía trabaja en esa empresa?' + req + '</label><div class="radios"><label><input type="radio" name="trab' + i + '" data-ref="' + i + '" data-k="trabajaAun" value="no"' + (x.trabajaAun === 'no' ? ' checked' : '') + '> No, ya salí</label><label><input type="radio" name="trab' + i + '" data-ref="' + i + '" data-k="trabajaAun" value="si"' + (x.trabajaAun === 'si' ? ' checked' : '') + '> Sí, todavía trabajo ahí</label></div></div>' +
+        '<div class="campo"><label>Fecha en que salió (mes y año)</label><input data-ref="' + i + '" data-k="fechaSalida" placeholder="Ej.: marzo 2025" value="' + esc(x.fechaSalida || '') + '"></div></fieldset>'; }
+      return '<p class="small"><b>Hágalo primero.</b> Escriba el nombre, teléfono y empresa de su <b>supervisor en su último trabajo</b>. Nosotros lo llamaremos para su referencia laboral.</p>' + r(0) + r(1) + '<button class="btn pri" data-guardarref>Guardar</button>';
     }
     return h;
   }
@@ -141,7 +153,7 @@
   }
 
   async function accion(fn, okMsg) {
-    try { var nv = await fn(); if (nv) V = nv; if (okMsg) toast(okMsg, 'ok'); var ep = estadoPasos(); abierto = ep.actual || abierto; pintar(); window.scrollTo({ top: ($('.paso.abierto') || app).offsetTop - 80, behavior: 'smooth' }); }
+    try { var nv = await fn(); if (nv) V = nv; if (okMsg) toast(okMsg, 'ok'); abierto = siguientePaso(abierto); pintar(); window.scrollTo({ top: ($('.paso.abierto') || app).offsetTop - 80, behavior: 'smooth' }); }
     catch (e) { ocupado(false); toast(e.message, 'mal'); }
   }
 
@@ -175,7 +187,7 @@
     };
     var lab = $('[data-labok]', paso); if (lab) lab.onclick = function () { accion(function () { return API.call('cand.datos', { token: token, doc: 'laboratorio', datos: { fecha: $('#labfecha').value } }); }, 'Gracias, anotado'); };
     var gr = $('[data-guardarref]', paso); if (gr) gr.onclick = function () {
-      var refs = [{}, {}]; $$('[data-ref]', paso).forEach(function (el) { refs[+el.getAttribute('data-ref')][el.getAttribute('data-k')] = el.value.trim(); });
+      var refs = [{}, {}]; $$('[data-ref]', paso).forEach(function (el) { if (el.type === 'radio' && !el.checked) return; refs[+el.getAttribute('data-ref')][el.getAttribute('data-k')] = el.value.trim(); });
       accion(function () { return API.call('cand.datos', { token: token, doc: 'referencia', datos: { refs: refs } }); }, 'Referencia guardada');
     };
     var re = $('[data-reeditar]', paso); if (re) re.onclick = function () { d._editar = true; pintar(); };

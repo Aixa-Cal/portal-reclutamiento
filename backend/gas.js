@@ -62,6 +62,12 @@ var ACCIONES_ = {
     registrar(rec, 'Admin subió ' + (campo === 'resultadoArchivo' ? 'resultado de laboratorio' : 'referimiento de laboratorio'));
     guardar_(rec); return rec;
   },
+  'admin.subirDoc': function (r) {
+    var rec = porId_(r.id), def = docPorId(r.doc); if (!def) throw new Error('Documento no válido');
+    var base = (rec.docs[r.doc].archivos || []).length;
+    var metas = (r.archivos || []).map(function (f, i) { return guardarArchivo_(rec, nombreArchivo(rec, r.doc, base + i, ext_(f.nombre, f.mime)), f); });
+    aplicarSubida(rec, r.doc, metas, {}, false, true); guardar_(rec); return rec;
+  },
   'admin.archivo': function (r) {
     var f = DriveApp.getFileById(r.fileId), b = f.getBlob();
     return { nombre: f.getName(), mime: b.getContentType(), b64: Utilities.base64Encode(b.getBytes()) };

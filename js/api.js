@@ -51,6 +51,11 @@ var API = (function () {
       registrar(rec, 'Admin subió ' + (campo === 'resultadoArchivo' ? 'resultado de laboratorio' : 'referimiento de laboratorio'));
       guardar(db); return rec;
     },
+    'admin.subirDoc': async function (db, r) {
+      var rec = porId(db, r.id), base = rec.docs[r.doc].archivos.length, metas = [];
+      for (var i = 0; i < (r.archivos || []).length; i++) metas.push(await guardarArch(rec, nombreArchivo(rec, r.doc, base + i, ext(r.archivos[i].nombre, r.archivos[i].mime)), r.archivos[i]));
+      aplicarSubida(rec, r.doc, metas, {}, false, true); guardar(db); return rec;
+    },
     'admin.archivo': async function (db, r) { var f = await fget(r.fileId); if (!f) throw new Error('Archivo no encontrado'); return f; },
     'admin.guardarExpediente': async function () { return { url: '', carpeta: '' }; },
     'admin.carpeta': async function () { return { url: '' }; }
