@@ -62,7 +62,7 @@
     ORDEN_CANDIDATO.forEach(function (id, i) {
       var doc = docPorId(id), d = V.docs[id], num = i + 1;
       var cls = d.estado === 'rechazado' ? 'rech' : d.hecho ? 'hecho' : (ep.actual === doc.id ? 'actual' : '');
-      var sub = d.estado === 'rechazado' ? '<small style="color:var(--mal)">Debe corregirlo</small>' : d.hecho ? '<small class="muted">' + (d.estado === 'aprobado' ? 'Aprobado' : 'Recibido') + '</small>' :
+      var sub = d.estado === 'rechazado' ? '<small style="color:var(--mal)">Debe corregirlo</small>' : d.hecho ? '<small class="muted">' + (d.estado === 'aprobado' ? (id === 'cedula' ? 'Ya la tenemos' : 'Aprobado') : 'Recibido') + '</small>' :
         doc.tipo === 'laboratorio' ? '<small style="color:' + (V.lab.listo ? 'var(--pend);font-weight:600' : 'var(--gris)') + '">' + (V.lab.listo ? 'Lista: vaya cuanto antes' : 'Le avisaremos cuando pueda ir') + '</small>' :
         doc.tipo === 'referencia' ? '<small class="muted">Hágalo primero</small>' : '<small class="muted">Pendiente</small>';
       html += '<div class="paso ' + cls + (abierto === doc.id ? ' abierto' : '') + '" data-paso="' + doc.id + '"><div class="paso-h" data-abrir="' + doc.id + '"><div class="num">' + (d.hecho ? '✓' : num) + '</div><div class="paso-t">' + esc(doc.titulo) + sub + '</div><span class="muted">' + (abierto === doc.id ? '▴' : '▾') + '</span></div>' +
@@ -98,6 +98,9 @@
   function cuerpo(doc, d) {
     var c = cli(), h = '';
     if (d.estado === 'rechazado') h += '<div class="aviso mal"><b>Debe corregir este documento.</b> ' + esc(d.nota || 'Vuelva a subirlo claro y completo.') + '</div>';
+    if (doc.tipo === 'archivo' && d.estado === 'aprobado' && d.archivos.length) {
+      return '<div class="aviso ok"><b>' + (doc.id === 'cedula' ? 'Ya tenemos su cédula.' : 'Este documento ya está aprobado.') + '</b> No tiene que hacer nada en este paso.</div>' + archivosHtml(d);
+    }
     if (doc.tipo === 'archivo') {
       if (doc.ayuda) h += '<p class="small">' + esc(doc.ayuda) + '</p>';
       if (doc.enlace) h += '<p><a class="btn sm" href="' + doc.enlace.url + '" target="_blank" rel="noopener">' + esc(doc.enlace.texto) + ' ↗</a></p>';
