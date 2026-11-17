@@ -92,10 +92,19 @@
       '<div class="campo"><label>Sexo · uso interno *</label><div class="radios" style="padding-top:8px"><label><input type="radio" name="n_sexo" value="F"> Femenino</label><label><input type="radio" name="n_sexo" value="M"> Masculino</label></div></div></div>' +
       '<p class="tiny muted">El sexo solo define la evaluación de laboratorio. El candidato nunca ve el tipo de prueba.</p>' +
       '<div class="grid g2"><div class="campo"><label>Cédula (foto o PDF, opcional)</label><input type="file" id="n_cedfile" accept="image/*,application/pdf" multiple></div><div class="campo"><label>Fecha de vencimiento de la cédula</label><input type="date" id="n_cedvence"></div></div>' +
-      '<p class="tiny muted">Si sube la cédula aquí, el candidato ya no tiene que subirla.</p>' +
+      '<p class="tiny muted">Si sube la cédula aquí, el candidato ya no tiene que subirla. Se verá aquí abajo para que copie los datos.</p><div id="cedPrev"></div>' +
       '<button class="btn pri lg" id="crear">Crear y generar enlace</button></div><div id="creado"></div>';
     function prellenar() { var v = CLIENTES[$('#n_cliente').value].vacante; $('#n_posicion').value = v.posicion; $('#n_salario').value = v.salario; $('#n_contrato').value = v.contratoMeses; }
     $('#n_cliente').onchange = prellenar; prellenar();
+    $('#n_cedfile').onchange = function () {
+      var box = $('#cedPrev'); box.innerHTML = '';
+      Array.prototype.slice.call(this.files || []).slice(0, 2).forEach(function (f) {
+        var u = URL.createObjectURL(f);
+        box.insertAdjacentHTML('beforeend', /pdf/.test(f.type) ? '<iframe src="' + u + '#toolbar=0&view=FitH" style="width:100%;height:420px;border:1px solid var(--linea);border-radius:12px;margin-bottom:10px"></iframe>'
+          : '<img src="' + u + '" style="width:100%;max-height:420px;object-fit:contain;border:1px solid var(--linea);border-radius:12px;margin-bottom:10px;background:#fafbff">');
+      });
+      if (box.innerHTML) box.insertAdjacentHTML('afterbegin', '<p class="small" style="margin:6px 0"><b>Copie de la cédula:</b> nombre completo, número y fecha de expiración. Revise que no esté vencida.</p>');
+    };
     $('#crear').onclick = async function () {
       var sx = $('input[name=n_sexo]:checked');
       var datos = { cliente: $('#n_cliente').value, posicion: $('#n_posicion').value.trim(), nombre: $('#n_nombre').value.trim(), cedula: $('#n_cedula').value.trim(), telefono: $('#n_telefono').value.trim(),
