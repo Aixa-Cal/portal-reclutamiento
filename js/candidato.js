@@ -6,7 +6,7 @@
   if (!token) { app.innerHTML = '<div class="card"><h2>Enlace incompleto</h2><p class="muted">Abra el enlace exacto que le enviamos por WhatsApp.</p></div>'; return; }
 
   async function cargar() {
-    try { V = await API.call('cand.ver', { token: token }); pintar(); }
+    try { V = await API.call('cand.ver', { token: token }); aplicarTema(V.cliente); $('#chipCli').innerHTML = chipCliente(V.cliente); document.querySelector('meta[name=theme-color]') || document.head.insertAdjacentHTML('beforeend', '<meta name="theme-color" content="' + cli().colores.pri + '">'); pintar(); }
     catch (e) { app.innerHTML = '<div class="card"><h2>No pudimos abrir su expediente</h2><p class="muted">' + esc(e.message) + '</p>' + ayuda() + '</div>'; }
   }
   function ayuda() { return cfg.WHATSAPP_AYUDA ? '<p class="small">¿Tiene dudas? <a href="https://wa.me/' + cfg.WHATSAPP_AYUDA + '" target="_blank">Escríbanos por WhatsApp</a></p>' : ''; }
@@ -31,7 +31,7 @@
       html += '<div class="card"><div class="aviso ok"><b>Documentos enviados completos.</b> Gracias, ' + esc(primerNombre()) + '. Estamos revisando su expediente. Le escribiremos para los próximos pasos.</div>' +
         (V.lab.listo && !V.lab.asistio ? '<p><b>Importante:</b> todavía le falta ir a su evaluación pre empleo (paso 9).</p>' : '') + ayuda() + '</div>';
     }
-    html += '<div class="card"><h1>Hola, ' + esc(primerNombre()) + '</h1>' +
+    html += '<div class="card" style="border-top:4px solid var(--azul)"><h1>Hola, ' + esc(primerNombre()) + '</h1>' +
       '<p>Tenemos el placer de informarle que <b>' + esc(c.nombre) + '</b> desea continuar con la fase de depuración y completación de su expediente.</p>' +
       '<p>La posición es <b>' + esc(V.vacante.posicion || '') + '</b>, bajo modalidad de subcontratación para ' + esc(c.nombre) + ' a través de <b>' + esc(EMPRESA.nombre) + '</b>, empresa encargada de la tercerización de este puesto.</p>' +
       '<h3>Condiciones</h3><ul class="small">' +

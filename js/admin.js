@@ -68,7 +68,7 @@
         filas.map(function (r) {
           var venc = !r.enviadoEn && r.estado === 'activo' && new Date(r.vence) < ahora, d = r.depuracion;
           return '<tr class="fila" data-id="' + r.id + '"><td><b>' + esc(r.nombre) + '</b><div class="tiny muted">' + esc(r.cedula || r.telefono) + '</div></td>' +
-            '<td>' + esc(CLIENTES[r.cliente].nombre) + '<div class="tiny muted">' + esc(r.posicion) + '</div></td><td>' + pillEtapa(r.etapa) + (r.familiaresDeclara === 'si' ? ' <span class="pill mal" title="Declaró familiares en la empresa">Familiar</span>' : '') + '</td>' +
+            '<td>' + chipCliente(r.cliente) + '<div class="tiny muted" style="margin-top:4px">' + esc(r.posicion) + '</div></td><td>' + pillEtapa(r.etapa) + (r.familiaresDeclara === 'si' ? ' <span class="pill mal" title="Declaró familiares en la empresa">Familiar</span>' : '') + '</td>' +
             '<td><div class="tiny muted">' + r.progreso.hechos + '/' + r.progreso.total + (d.pendientesRevision ? ' · <b style="color:var(--pend)">' + d.pendientesRevision + ' por revisar</b>' : '') + '</div><div class="barra"><i style="width:' + r.progreso.pct + '%"></i></div></td>' +
             '<td style="white-space:nowrap">' + dot(d.docs, 'Docs') + ' ' + dot(d.lab, 'Lab') + ' ' + dot(d.referencia, 'Ref') + ' ' + dot(d.familiares, 'Fam') + '</td>' +
             '<td class="small">' + (r.enviadoEn ? '<span class="muted">Enviado ' + fechaCorta(r.enviadoEn) + '</span>' : '<span style="color:' + (venc ? 'var(--mal)' : 'inherit') + '">' + (venc ? 'Venció ' : 'Vence ') + fechaHora(r.vence) + '</span>') + '</td></tr>';
@@ -131,7 +131,7 @@
     var r = REC, c = CLIENTES[r.cliente], dep = depuracion(r), et = etapa(r), p = progreso(r);
     function sem(v, t, sub) { return '<div class="sem ' + (v === 'ok' ? 'ok' : v === 'mal' ? 'mal' : 'pend') + '"><b>' + t + '</b>' + (v === 'ok' ? 'Completo' : v === 'mal' ? 'Con observación' : 'Pendiente') + (sub ? '<div class="tiny muted">' + sub + '</div>' : '') + '</div>'; }
     var refs = ((r.docs.referencia.datos || {}).refs || []);
-    var h = '<div class="panel-h"><div style="flex:1;min-width:0"><h2 style="margin:0">' + esc(r.nombre) + '</h2><div class="small muted">' + esc(c.nombre) + ' · ' + esc(r.vacante.posicion) + ' · creado ' + fechaCorta(r.creado) + '</div></div>' + pillEtapa(et) + '<button class="btn sm" id="cerrar">✕</button></div><div class="panel-b">';
+    var h = '<div class="panel-h" style="border-top:5px solid ' + c.colores.pri + '"><div style="flex:1;min-width:0"><h2 style="margin:0">' + esc(r.nombre) + '</h2><div class="small muted" style="margin-top:4px">' + chipCliente(r.cliente) + ' ' + esc(r.vacante.posicion) + ' · creado ' + fechaCorta(r.creado) + '</div></div>' + pillEtapa(et) + '<button class="btn sm" id="cerrar">✕</button></div><div class="panel-b">';
 
     // Enlace y mensajes
     h += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><b>Avance del candidato</b><span>' + p.hechos + '/' + p.total + (r.enviadoEn ? ' · Envió completo ' + fechaHora(r.enviadoEn) : ' · Vence ' + fechaHora(venceEn(r))) + '</span></div><div class="barra"><i style="width:' + p.pct + '%"></i></div>' +

@@ -99,3 +99,13 @@ async function prepararArchivo(file) {
   var buf = new Uint8Array(await file.arrayBuffer());
   return { nombre: file.name, mime: file.type || 'application/pdf', b64: bytesAB64(buf) };
 }
+
+/* Línea gráfica de cada empresa: cambia los colores de la página */
+function aplicarTema(clienteId) {
+  var c = (CLIENTES[clienteId] || {}).colores || EMPRESA.colores, r = document.documentElement.style;
+  r.setProperty('--azul', c.pri); r.setProperty('--azul2', c.osc); r.setProperty('--azul-s', c.suave);
+}
+function chipCliente(clienteId, extra) {
+  var c = CLIENTES[clienteId]; if (!c) return '';
+  return '<span class="pill" style="background:' + c.colores.suave + ';color:' + c.colores.osc + ';border:1px solid ' + c.colores.pri + '33">' + '<i style="width:8px;height:8px;border-radius:50%;background:' + c.colores.pri + ';display:inline-block"></i>' + esc(c.nombre) + (extra || '') + '</span>';
+}

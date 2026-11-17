@@ -6,11 +6,13 @@ function limpiarTxt(s) {
   return s.replace(/[^\x0A\x20-\x7E\xA0-\xFF–•€]/g, '');
 }
 
-async function nuevoLienzo() {
+function hexRgb(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255]; }
+async function nuevoLienzo(colorHex) {
   var L = PDFLib, doc = await L.PDFDocument.create();
   var f = await doc.embedFont(L.StandardFonts.Helvetica), fb = await doc.embedFont(L.StandardFonts.HelveticaBold);
   var W = 595.28, H = 841.89, M = 46;
-  var z = { doc: doc, f: f, fb: fb, W: W, H: H, M: M, page: null, y: 0, pie: '' };
+  var AC = hexRgb(colorHex || EMPRESA.colores.pri);
+  var z = { doc: doc, f: f, fb: fb, W: W, H: H, M: M, page: null, y: 0, pie: '', acento: AC };
   function rgb(c) { return L.rgb(c[0], c[1], c[2]); }
   z.rgb = rgb;
   z.pagina = function () {
@@ -39,8 +41,8 @@ async function nuevoLienzo() {
   };
   z.encabezado = function (titulo, sub) {
     z.pagina();
-    z.page.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: rgb(AZUL) });
-    z.page.drawText(limpiarTxt(EMPRESA.nombre.toUpperCase()), { x: M, y: H - 36, size: 8, font: fb, color: rgb(AZUL) });
+    z.page.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: rgb(AC) });
+    z.page.drawText(limpiarTxt(EMPRESA.nombre.toUpperCase()), { x: M, y: H - 36, size: 8, font: fb, color: rgb(AC) });
     z.y = H - 50;
     z.texto(titulo, { size: 16, bold: true });
     if (sub) z.texto(sub, { size: 9, color: GRIS });
@@ -48,7 +50,7 @@ async function nuevoLienzo() {
   };
   z.seccion = function (t) {
     z.espacio(34); z.y -= 8;
-    z.page.drawText(limpiarTxt(t.toUpperCase()), { x: M, y: z.y - 9, size: 8.5, font: fb, color: rgb(AZUL) });
+    z.page.drawText(limpiarTxt(t.toUpperCase()), { x: M, y: z.y - 9, size: 8.5, font: fb, color: rgb(AC) });
     z.y -= 14; z.page.drawLine({ start: { x: M, y: z.y }, end: { x: W - M, y: z.y }, thickness: 0.6, color: rgb(LINEA) }); z.y -= 6;
   };
   /* filas de campos: [[etiqueta, valor], ...] en n columnas */
@@ -107,7 +109,7 @@ function siNo(v) { return v === 'si' ? 'Sí' : v === 'no' ? 'No' : (v || ''); }
 
 /* ---------- Solicitud de empleo digital ---------- */
 async function pdfSolicitud(d, cli, firma, meta) {
-  var z = await nuevoLienzo(); z.pie = 'Solicitud de empleo · ' + d.nombres + ' ' + d.apellidos + ' · Código de verificación ' + meta.codigo;
+  var z = await nuevoLienzo(cli.colores.pri); z.pie = 'Solicitud de empleo · ' + d.nombres + ' ' + d.apellidos + ' · Código de verificación ' + meta.codigo;
   z.encabezado('Solicitud de empleo', 'Posición: ' + meta.posicion + ' · Cliente: ' + cli.razon + ' · Fecha: ' + fechaCorta(meta.fecha));
   z.seccion('Información personal');
   z.campos([['Apellidos', d.apellidos], ['Nombres', d.nombres], ['Cédula', d.cedula], ['Sexo', d.sexo], ['Fecha de nacimiento', d.nacimiento], ['Lugar de nacimiento', d.lugarNac],
@@ -132,7 +134,7 @@ async function pdfSolicitud(d, cli, firma, meta) {
 
 /* ---------- Declaración de relaciones personales y comerciales digital ---------- */
 async function pdfDeclaracion(d, cli, firma, meta) {
-  var z = await nuevoLienzo(); z.pie = 'Declaración de relaciones · ' + d.nombre + ' · Código de verificación ' + meta.codigo;
+  var z = await nuevoLienzo(cli.colores.pri); z.pie = 'Declaración de relaciones · ' + d.nombre + ' · Código de verificación ' + meta.codigo;
   z.encabezado('Formulario de declaración de relaciones personales y comerciales', cli.razon + ' · ' + EMPRESA.razon + ' · Fecha: ' + fechaCorta(meta.fecha));
   z.texto('Propósito: identificar relaciones personales y comerciales del colaborador y sus familiares cercanos que puedan estar vinculadas a ' + cli.nombre + ', sus suplidores o relacionados comerciales. Esta información no se divulga públicamente; se obtiene únicamente para fines internos.', { size: 8.5, color: GRIS });
   z.seccion('1. Familiares cercanos (cónyuge/pareja, hijos, padres, hermanos, dependientes)');
@@ -152,7 +154,7 @@ async function pdfDeclaracion(d, cli, firma, meta) {
 /* ---------- Expediente completo para el cliente ---------- */
 async function pdfExpediente(rec, traerArchivo, progresoCb) {
   var L = PDFLib, cli = CLIENTES[rec.cliente], dep = depuracion(rec);
-  var z = await nuevoLienzo(); z.pie = 'Expediente · ' + rec.nombre + ' · ' + cli.nombre + ' · ' + EMPRESA.razon;
+  var z = await nuevoLienzo(cli.colores.pri); z.pie = 'Expediente · ' + rec.nombre + ' · ' + cli.nombre + ' · ' + EMPRESA.razon;
   z.encabezado('Expediente del candidato', cli.razon + ' · Subcontratación a través de ' + EMPRESA.razon);
   z.seccion('Candidato');
   z.campos([['Nombre', rec.nombre], ['Cédula', rec.cedula], ['Teléfono', rec.telefono], ['Correo', rec.correo], ['Posición', rec.vacante.posicion],
@@ -197,7 +199,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
           var img = /png/.test(mime) ? await z.doc.embedPng(bytes) : await z.doc.embedJpg(bytes);
           var pg = z.doc.addPage([z.W, z.H]), maxW = z.W - 2 * z.M, maxH = z.H - 2 * z.M - 30, k2 = Math.min(maxW / img.width, maxH / img.height, 1.6);
           if (x.n === 1) k2 = Math.min(k2, 200 / img.width);
-          pg.drawText(limpiarTxt(x.n + '. ' + x.t), { x: z.M, y: z.H - z.M + 6, size: 10, font: z.fb, color: z.rgb(AZUL) });
+          pg.drawText(limpiarTxt(x.n + '. ' + x.t), { x: z.M, y: z.H - z.M + 6, size: 10, font: z.fb, color: z.rgb(z.acento) });
           pg.drawImage(img, { x: (z.W - img.width * k2) / 2, y: z.H - z.M - 20 - img.height * k2, width: img.width * k2, height: img.height * k2 });
         }
       } catch (err) {

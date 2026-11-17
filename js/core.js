@@ -8,7 +8,8 @@ var EMPRESA = {
   nombre: 'Asesores Técnicos Empresariales',
   razon: 'Asesores Técnicos Empresariales, SRL',
   firmaRRHH: 'RRHH – Asesores Técnicos Empresariales, SRL',
-  plazoDias: 3
+  plazoDias: 3,
+  colores: { pri: '#1350D6', osc: '#0B3AA8', suave: '#EAF1FF' }
 };
 
 var CLIENTES = {
@@ -16,6 +17,7 @@ var CLIENTES = {
     id: 'altice',
     nombre: 'Altice Dominicana',
     razon: 'Altice Dominicana, S.A.',
+    colores: { pri: '#028BFF', osc: '#0070D1', suave: '#E6F3FF' },
     firma: 'manuscrita', // documentos impresos y firmados a mano
     plantillas: {
       solicitud: 'formularios/altice-solicitud-empleo.pdf',
@@ -27,6 +29,7 @@ var CLIENTES = {
     id: 'crecer',
     nombre: 'Seguros Crecer',
     razon: 'Seguros Crecer',
+    colores: { pri: '#01AC66', osc: '#018A52', suave: '#E6F7EF' },
     firma: 'digital', // formulario en línea con firma y aceptación digital
     plantillas: {},
     vacante: { posicion: '', salario: '', contratoMeses: 6 }
