@@ -176,7 +176,7 @@ function depuracion(rec) {
   var ref = rec.referencia.verificada ? (rec.referencia.resultado === 'negativa' ? 'mal' : 'ok') : 'pendiente';
   var fam = rec.familiares.verificado ? (rec.familiares.conflicto ? 'mal' : 'ok') : 'pendiente';
   var docs = docsOk ? 'ok' : 'pendiente', ev = rec.evaluacion || {};
-  var eva = !ev.url ? 'na' : ev.resultado === 'aprobado' ? 'ok' : ev.resultado === 'no_aprobado' ? 'mal' : 'pendiente';
+  var eva = !ev.url ? 'na' : ev.completadaEn ? 'ok' : 'pendiente'; // constancia de conocimientos: sin nota
   return { docs: docs, pendientesRevision: pendientesRevision, lab: lab, referencia: ref, familiares: fam, evaluacion: eva,
            listo: docs === 'ok' && lab === 'ok' && ref === 'ok' && fam === 'ok' && (eva === 'ok' || eva === 'na') };
 }

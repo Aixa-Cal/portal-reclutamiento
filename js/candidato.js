@@ -91,7 +91,7 @@
     var body = '';
     if (ab) {
       body = ev.completada ? '<div class="aviso ok">¡Gracias! Ya nos indicó que completó su evaluación. Nosotros revisamos el resultado.</div>' :
-        '<p class="small">' + (ev.instrucciones ? esc(ev.instrucciones) : 'Es una evaluación sobre la posición de <b>' + esc(V.vacante.posicion || '') + '</b>.') + '</p>' +
+        '<p class="small">' + (ev.instrucciones ? esc(ev.instrucciones) : 'Es una constancia de sus conocimientos para la posición de <b>' + esc(V.vacante.posicion || '') + '</b>. No es un examen con nota: responda con calma lo que sabe.') + '</p>' +
         '<ol class="small"><li>Busque un lugar tranquilo y con buena señal de internet.</li><li>Cuando esté listo/a, toque <b>Abrir evaluación</b>.</li><li>Al terminar, regrese aquí y toque <b>Ya la completé</b>.</li></ol>' +
         '<p><a class="btn pri block lg" href="' + esc(ev.url) + '" target="_blank" rel="noopener" data-abrireval>Abrir evaluación' + (ev.nombre ? ': ' + esc(ev.nombre) : '') + ' ↗</a></p>' +
         '<button class="btn block" data-evalok' + (ev.abierta ? '' : ' disabled title="Primero abra la evaluación"') + '>Ya la completé</button>';
@@ -240,6 +240,16 @@
       br.disabled = false; br.textContent = '⬇ Descargar mi referimiento';
     };
     var lab = $('[data-labok]', paso); if (lab) lab.onclick = function () { accion(function () { return API.call('cand.datos', { token: token, doc: 'laboratorio', datos: { fecha: $('#labfecha').value } }); }, 'Gracias, anotado'); };
+    var refInputs = $$('[data-ref]', paso);
+    if (refInputs.length) {
+      var claveRef = 'ref_' + token, refGuard = null; try { refGuard = JSON.parse(localStorage.getItem(claveRef)); } catch (e) {}
+      if (refGuard && !(d.datos && d.datos.refs && d.datos.refs.length)) refInputs.forEach(function (el) {
+        var v = (refGuard[+el.getAttribute('data-ref')] || {})[el.getAttribute('data-k')]; if (v == null) return;
+        if (el.type === 'radio') el.checked = el.value === v; else el.value = v;
+      });
+      paso.addEventListener('input', function () { var rr = [{}, {}]; refInputs.forEach(function (el) { if (el.type === 'radio' && !el.checked) return; rr[+el.getAttribute('data-ref')][el.getAttribute('data-k')] = el.value; }); try { localStorage.setItem(claveRef, JSON.stringify(rr)); } catch (e) {} });
+      paso.addEventListener('change', function () { paso.dispatchEvent(new Event('input')); });
+    }
     var gr = $('[data-guardarref]', paso); if (gr) gr.onclick = function () {
       var refs = [{}, {}]; $$('[data-ref]', paso).forEach(function (el) { if (el.type === 'radio' && !el.checked) return; refs[+el.getAttribute('data-ref')][el.getAttribute('data-k')] = el.value.trim(); });
       accion(function () { return API.call('cand.datos', { token: token, doc: 'referencia', datos: { refs: refs } }); }, 'Referencia guardada');
@@ -251,8 +261,22 @@
       activarRepetibles(form, 1); activarSiNo(form);
       [['cedula', V.cedula], ['telefono', V.telefono], ['correo', V.correo]].forEach(function (x) { var el = $('[name=' + x[0] + ']', form); if (el && !el.value && x[1]) el.value = x[1]; });
       var clave = 'borrador_' + token + '_' + docId;
-      try { llenarForm(form, JSON.parse(localStorage.getItem(clave))); } catch (e) {}
-      form.addEventListener('input', function () { try { localStorage.setItem(clave, JSON.stringify(leerForm(form))); } catch (e) {} });
+      var local = null; try { local = JSON.parse(localStorage.getItem(clave)); } catch (e) {}
+      llenarForm(form, local || ((V.docs[docId].datos || {}).borrador) || null);
+      $('[data-firmar]', paso).insertAdjacentHTML('beforebegin', '<p class="tiny muted" id="estadoBorrador" style="text-align:center;margin:0 0 6px">Lo que escriba se guarda solo. Puede cerrar y volver luego.</p>');
+      var tGuardar = null;
+      var guardarBorrador = function () {
+        var datosB = leerForm(form); delete datosB.acepto;
+        try { localStorage.setItem(clave, JSON.stringify(datosB)); } catch (e) {}
+        clearTimeout(tGuardar);
+        tGuardar = setTimeout(function () {
+          var eb = $('#estadoBorrador'); if (eb) eb.textContent = 'Guardando…';
+          API.call('cand.datos', { token: token, doc: docId, datos: { borrador: datosB } })
+            .then(function () { var e2 = $('#estadoBorrador'); if (e2) e2.textContent = '✓ Guardado ' + new Date().toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }); })
+            .catch(function () { var e3 = $('#estadoBorrador'); if (e3) e3.textContent = 'Guardado en este teléfono. Se enviará al firmar.'; });
+        }, 2000);
+      };
+      form.addEventListener('input', guardarBorrador); form.addEventListener('change', guardarBorrador);
       var pad = padFirma($('.firma-box', form));
       $('[data-firmar]', paso).onclick = function () {
         var faltan = validarForm(form), datos = leerForm(form);
@@ -265,6 +289,7 @@
           var bytes = docId === 'solicitud' ? await pdfSolicitud(datos, cli(), firma, meta) : await pdfDeclaracion(datos, cli(), firma, meta);
           var extra = docId === 'solicitud' ? { parienteCliente: datos.parienteCliente } :
             { familiares: datos.p2, familiaresDetalle: (datos.p2filas || []).map(function (r) { return [r.nombre, r.relacion, r.entidad].filter(Boolean).join(' – '); }).join('; ') };
+          clearTimeout(tGuardar); extra.borrador = null;
           extra.formulario = datos; extra.firmadoEn = meta.fecha; extra.codigo = meta.codigo; extra.dispositivo = meta.dispositivo;
           var nv = await API.call('cand.subir', { token: token, doc: docId, archivos: [{ nombre: (docId === 'solicitud' ? 'Solicitud de empleo' : 'Declaracion de relaciones') + ' - firmada.pdf', mime: 'application/pdf', b64: bytesAB64(bytes) }], datos: extra, reemplazar: true });
           try { localStorage.removeItem(clave); } catch (e) {}

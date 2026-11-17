@@ -170,7 +170,7 @@
     // Depuración
     h += '<div class="card"><h3>Depuración</h3><div class="semaforo">' + sem(dep.docs, 'Documentos', dep.pendientesRevision ? dep.pendientesRevision + ' por revisar' : '') + sem(dep.lab, 'Evaluación pre empleo', r.lab.resultado === 'apto' ? 'Apto' : '') +
       sem(dep.referencia, 'Referencia laboral', '') + sem(dep.familiares, 'Familiares en ' + c.nombre, r.familiares.declara === 'si' ? 'Declaró que SÍ' : r.familiares.declara === 'no' ? 'Declaró que no' : '') +
-      (dep.evaluacion !== 'na' ? sem(dep.evaluacion, 'Evaluación del puesto', (r.evaluacion || {}).nota || ((r.evaluacion || {}).completadaEn ? 'Completada por el candidato' : '')) : '') + '</div>' +
+      (dep.evaluacion !== 'na' ? sem(dep.evaluacion, 'Evaluación del puesto', (r.evaluacion || {}).completadaEn ? 'Completada ' + fechaCorta(r.evaluacion.completadaEn) : ((r.evaluacion || {}).abiertaEn ? 'Abierta, sin terminar' : 'Sin abrir')) : '') + '</div>' +
       (dep.listo ? '<div class="aviso ok" style="margin-top:12px">Depuración completa. Puede descargar el expediente y enviarlo a ' + esc(c.nombre) + '.</div>' : '') +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center"><button class="btn pri" id="expPdf">⬇ Expediente completo (PDF)</button><button class="btn" id="expZip">⬇ Archivos sueltos (ZIP)</button>' + (API.demo ? '' : '<button class="btn sm" id="drive">Carpeta en Drive ↗</button>') +
       '<div class="sp"></div><select id="estado" style="max-width:210px"><option value="activo">Estado: En proceso</option><option value="listo">Estado: Expediente listo</option><option value="enviado_cliente">Estado: Enviado al cliente</option><option value="descartado">Estado: Descartado</option></select></div><div id="expProg" class="tiny muted" style="margin-top:6px"></div></div>';
@@ -207,12 +207,10 @@
 
     // Evaluación del puesto
     var ev = r.evaluacion || {};
-    h += '<div class="card"><h3>Evaluación del puesto</h3><p class="small muted">Pegue el enlace de la prueba. El candidato lo verá como el paso 4 y la abrirá cuando esté listo.</p>' +
+    h += '<div class="card"><h3>Evaluación del puesto</h3><p class="small muted">Constancia de conocimientos para el puesto (sin nota). Pegue el enlace: el candidato lo verá como el paso 4 y la hará cuando esté listo.</p>' +
       '<div class="grid g2"><div class="campo"><label>Enlace de la evaluación</label><input id="evUrl" type="url" placeholder="https://…" value="' + esc(ev.url || '') + '"></div><div class="campo"><label>Nombre</label><input id="evNom" placeholder="Ej.: Prueba técnica QA" value="' + esc(ev.nombre || '') + '"></div></div>' +
       '<div class="campo"><label>Instrucciones para el candidato (opcional)</label><input id="evIns" placeholder="Ej.: Dura 45 minutos. Use computadora si puede." value="' + esc(ev.instrucciones || '') + '"></div>' +
-      (ev.url ? '<div class="small" style="margin-bottom:10px">' + (ev.completadaEn ? '<span class="pill ok">Completada ' + fechaHora(ev.completadaEn) + '</span>' : ev.abiertaEn ? '<span class="pill pend">Abierta ' + fechaHora(ev.abiertaEn) + ', sin terminar</span>' : '<span class="pill gris">El candidato aún no la abre</span>') + '</div>' +
-        '<div class="grid g2"><div class="campo"><label>Resultado</label><select id="evRes"><option value="">Pendiente</option><option value="aprobado"' + (ev.resultado === 'aprobado' ? ' selected' : '') + '>Aprobó</option><option value="no_aprobado"' + (ev.resultado === 'no_aprobado' ? ' selected' : '') + '>No aprobó</option></select></div>' +
-        '<div class="campo"><label>Puntaje o nota</label><input id="evNota" placeholder="Ej.: 85/100" value="' + esc(ev.nota || '') + '"></div></div>' : '') +
+      (ev.url ? '<div class="small" style="margin-bottom:10px">' + (ev.completadaEn ? '<span class="pill ok">Completada ' + fechaHora(ev.completadaEn) + '</span>' : ev.abiertaEn ? '<span class="pill pend">Abierta ' + fechaHora(ev.abiertaEn) + ', sin terminar</span>' : '<span class="pill gris">El candidato aún no la abre</span>') + '</div>' : '') +
       '<button class="btn pri sm" id="evGuardar">Guardar evaluación</button></div>';
 
     // Referencia
@@ -283,6 +281,14 @@
     $('#upRes').onchange = function () { subirLab(this, 'resultado'); };
     $('#labRes').onchange = function () { cambiar([['lab.resultado', this.value]], 'Resultado guardado'); };
     $('#labNotas').onchange = function () { cambiar([['lab.notas', this.value]]); };
+    var claveRefA = 'refadmin_' + r.id;
+    if (!r.referencia.formulario) { try { var dr = JSON.parse(localStorage.getItem(claveRefA)); if (dr) {
+      $$('#refForm [data-rf]').forEach(function (el) { var k = el.getAttribute('data-rf'); if (dr[k]) el.value = dr[k]; });
+      Object.keys(dr.calif || {}).forEach(function (asp) { var el = $$('#refForm input[data-asp]').filter(function (x) { return x.getAttribute('data-asp') === asp && x.value === dr.calif[asp]; })[0]; if (el) el.checked = true; });
+      if (dr.recontratar) { var rc0 = $('#refForm input[name=recontratar][value="' + dr.recontratar + '"]'); if (rc0) rc0.checked = true; }
+    } } catch (e) {} }
+    $('#refForm').addEventListener('input', function () { try { localStorage.setItem(claveRefA, JSON.stringify(leerRef())); } catch (e) {} });
+    $('#refForm').addEventListener('change', function () { try { localStorage.setItem(claveRefA, JSON.stringify(leerRef())); } catch (e) {} });
     function leerRef() {
       var F = {}; $$('#refForm [data-rf]').forEach(function (el) { F[el.getAttribute('data-rf')] = el.value.trim(); });
       F.calif = {}; $$('#refForm input[data-asp]:checked').forEach(function (el) { F.calif[el.getAttribute('data-asp')] = el.value; });
@@ -301,7 +307,6 @@
     $('#evGuardar').onclick = function () {
       var url = $('#evUrl').value.trim(); if (url && !/^https?:\/\//i.test(url)) return toast('El enlace debe empezar con https://', 'mal');
       var cambios = [['evaluacion.url', url], ['evaluacion.nombre', $('#evNom').value.trim()], ['evaluacion.instrucciones', $('#evIns').value.trim()]];
-      if ($('#evRes')) cambios.push(['evaluacion.resultado', $('#evRes').value], ['evaluacion.nota', $('#evNota').value.trim()]);
       cambiar(cambios, 'Evaluación guardada');
     };
     $('#famGuardar').onclick = function () { cambiar([['familiares.verificado', $('#famVer').checked], ['familiares.conflicto', $('#famCon').checked], ['familiares.notas', $('#famNotas').value]], 'Guardado'); };
