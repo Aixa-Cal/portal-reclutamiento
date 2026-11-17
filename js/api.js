@@ -37,6 +37,10 @@ var API = (function () {
       var arcs = asignarLados(rec, r.doc, r.archivos || []); for (var i = 0; i < arcs.length; i++) { var mm = await guardarArch(rec, nombreArchivo(rec, r.doc, base + i, ext(arcs[i].nombre, arcs[i].mime), arcs[i].lado), arcs[i]); if (arcs[i].lado) mm.lado = arcs[i].lado; metas.push(mm); }
       aplicarSubida(rec, r.doc, metas, r.datos || {}, !!r.reemplazar); guardar(db); return vistaCandidato(rec);
     },
+    'cand.referimiento': async function (db, r) {
+      var rec = porToken(db, r.token), a = rec.lab.referimientoArchivo; if (!a) throw new Error('Su referimiento todavía no está listo.');
+      var f = await fget(a.fileId); return { nombre: 'Referimiento - ' + rec.nombre + '.' + ext(a.nombre, f.mime), mime: f.mime, b64: f.b64 };
+    },
     'cand.datos': async function (db, r) { var rec = porToken(db, r.token); aplicarDatos(rec, r.doc, r.datos || {}); guardar(db); return vistaCandidato(rec); },
     'cand.enviar': async function (db, r) { var rec = porToken(db, r.token); enviarExpediente(rec); guardar(db); return vistaCandidato(rec); },
     'admin.lista': async function (db) { return Object.keys(db).map(function (k) { return resumen(db[k]); }).sort(function (a, b) { return a.actualizado < b.actualizado ? 1 : -1; }); },
@@ -46,7 +50,7 @@ var API = (function () {
     'admin.docEstado': async function (db, r) { var rec = porId(db, r.id); adminDocEstado(rec, r.doc, r.estado, r.nota); guardar(db); return rec; },
     'admin.subirLab': async function (db, r) {
       var rec = porId(db, r.id), campo = r.campo === 'resultado' ? 'resultadoArchivo' : 'referimientoArchivo';
-      rec.lab[campo] = await guardarArch(rec, (campo === 'resultadoArchivo' ? '09 - Resultado evaluación pre empleo' : 'INTERNO - Referimiento laboratorio') + '.' + ext(r.archivo.nombre, r.archivo.mime), r.archivo);
+      rec.lab[campo] = await guardarArch(rec, (campo === 'resultadoArchivo' ? '09 - Resultado evaluación pre empleo' : 'Referimiento laboratorio') + '.' + ext(r.archivo.nombre, r.archivo.mime), r.archivo);
       if (campo === 'referimientoArchivo' && !rec.lab.referimiento) { rec.lab.referimiento = true; rec.lab.referimientoEn = ahoraISO(); }
       registrar(rec, 'Admin subió ' + (campo === 'resultadoArchivo' ? 'resultado de laboratorio' : 'referimiento de laboratorio'));
       guardar(db); return rec;

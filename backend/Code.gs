@@ -47,6 +47,11 @@ var ACCIONES_ = {
     aplicarSubida(rec, r.doc, metas, r.datos || {}, !!r.reemplazar);
     guardar_(rec); return vistaCandidato(rec);
   },
+  'cand.referimiento': function (r) {
+    var rec = porToken_(r.token), a = rec.lab.referimientoArchivo; if (!a) throw new Error('Su referimiento todavía no está listo.');
+    var b = DriveApp.getFileById(a.fileId).getBlob();
+    return { nombre: 'Referimiento - ' + rec.nombre + '.' + ext_(a.nombre, b.getContentType()), mime: b.getContentType(), b64: Utilities.base64Encode(b.getBytes()) };
+  },
   'cand.datos': function (r) { var rec = porToken_(r.token); aplicarDatos(rec, r.doc, r.datos || {}); guardar_(rec); return vistaCandidato(rec); },
   'cand.enviar': function (r) {
     var rec = porToken_(r.token); enviarExpediente(rec); guardar_(rec);
@@ -64,7 +69,7 @@ var ACCIONES_ = {
   'admin.docEstado': function (r) { var rec = porId_(r.id); adminDocEstado(rec, r.doc, r.estado, r.nota); guardar_(rec); return rec; },
   'admin.subirLab': function (r) {
     var rec = porId_(r.id), campo = r.campo === 'resultado' ? 'resultadoArchivo' : 'referimientoArchivo';
-    var nombre = (campo === 'resultadoArchivo' ? '09 - Resultado evaluación pre empleo' : 'INTERNO - Referimiento laboratorio') + '.' + ext_(r.archivo.nombre, r.archivo.mime);
+    var nombre = (campo === 'resultadoArchivo' ? '09 - Resultado evaluación pre empleo' : 'Referimiento laboratorio') + '.' + ext_(r.archivo.nombre, r.archivo.mime);
     rec.lab[campo] = guardarArchivo_(rec, nombre, r.archivo);
     if (campo === 'referimientoArchivo' && !rec.lab.referimiento) { rec.lab.referimiento = true; rec.lab.referimientoEn = ahoraISO(); }
     registrar(rec, 'Admin subió ' + (campo === 'resultadoArchivo' ? 'resultado de laboratorio' : 'referimiento de laboratorio'));
@@ -372,7 +377,7 @@ function vistaCandidato(rec) {
   });
   return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
-           lab: { listo: !!rec.lab.referimiento, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia } };
+           lab: { listo: !!rec.lab.referimiento, referimiento: !!rec.lab.referimientoArchivo, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia } };
 }
 function limpiarDatosCand(d) { var o = {}; for (var k in (d || {})) if (k !== 'formulario') o[k] = d[k]; return o; }
 

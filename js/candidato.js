@@ -142,7 +142,9 @@
     if (doc.tipo === 'laboratorio') {
       if (V.lab.asistio) return '<div class="aviso ok">Evaluación realizada el ' + esc(V.lab.fechaAsistencia) + '. Nosotros recibiremos el resultado directamente.</div>';
       if (!V.lab.listo) return '<div class="aviso pend">Estamos preparando su evaluación pre empleo. Le avisaremos por WhatsApp. <b>Cuando le avisemos, vaya cuanto antes</b>: sin esta evaluación no podemos enviar su expediente. Mientras tanto, siga con los demás pasos.</div>';
-      return '<div class="aviso">Su evaluación pre empleo está lista.</div><ol class="small"><li>Vaya a <b>Laboratorios Referencia</b> con su <b>cédula</b>.</li><li>Diga que va de parte de <b>' + esc(EMPRESA.nombre) + '</b>.</li><li>Es una evaluación pre empleo para confirmar que está apto/a para trabajar.</li><li><b>No tiene que pagar nada.</b></li></ol>' +
+      return '<div class="aviso">Su evaluación pre empleo está lista. Vaya cuanto antes.</div>' +
+        (V.lab.referimiento ? '<p><button class="btn pri block lg" data-bajarref>⬇ Descargar mi referimiento</button></p><p class="tiny muted" style="text-align:center;margin-top:-6px">Muéstrelo en su celular o impreso, junto con su cédula.</p>' : '') +
+        '<ol class="small">' + (V.lab.referimiento ? '<li>Descargue su <b>referimiento</b> con el botón de arriba.</li>' : '') + '<li>Vaya a <b>Laboratorios Referencia</b> con su <b>cédula</b>' + (V.lab.referimiento ? ' y el referimiento' : '') + '.</li><li>Diga que va de parte de <b>' + esc(EMPRESA.nombre) + '</b>.</li><li>Es una evaluación pre empleo para confirmar que está apto/a para trabajar.</li><li><b>No tiene que pagar nada.</b></li></ol>' +
         '<div class="grid g2" style="align-items:end"><div class="campo"><label>¿Qué día fue?</label><input type="date" id="labfecha" value="' + new Date().toISOString().slice(0, 10) + '"></div><div class="campo"><button class="btn pri block" data-labok>Ya me realicé la evaluación</button></div></div>';
     }
     if (doc.tipo === 'referencia') {
@@ -199,6 +201,16 @@
     var gf = $('[data-guardarfam]', paso); if (gf) gf.onclick = function () {
       var fam = $('input[name=fam]:checked', paso); if (!fam) return toast('Seleccione Sí o No', 'mal');
       accion(function () { return API.call('cand.datos', { token: token, doc: docId, datos: { familiares: fam.value, familiaresDetalle: $('textarea[name=famdet]', paso).value } }); }, 'Respuesta guardada');
+    };
+    var br = $('[data-bajarref]', paso); if (br) br.onclick = async function () {
+      br.disabled = true; br.textContent = 'Descargando…';
+      try {
+        var f = await API.call('cand.referimiento', { token: token });
+        var url = URL.createObjectURL(new Blob([b64aBytes(f.b64)], { type: f.mime }));
+        var a = document.createElement('a'); a.href = url; a.download = f.nombre; document.body.appendChild(a); a.click(); a.remove();
+        toast('Referimiento descargado. Muéstrelo en el laboratorio.', 'ok');
+      } catch (e) { toast(e.message, 'mal'); }
+      br.disabled = false; br.textContent = '⬇ Descargar mi referimiento';
     };
     var lab = $('[data-labok]', paso); if (lab) lab.onclick = function () { accion(function () { return API.call('cand.datos', { token: token, doc: 'laboratorio', datos: { fecha: $('#labfecha').value } }); }, 'Gracias, anotado'); };
     var gr = $('[data-guardarref]', paso); if (gr) gr.onclick = function () {

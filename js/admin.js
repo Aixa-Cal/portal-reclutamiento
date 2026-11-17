@@ -24,7 +24,7 @@
     return 'Hola ' + primer(rec.nombre) + ', le recordamos completar su expediente para ' + CLIENTES[rec.cliente].nombre + '.\n\n' + (falta.length ? 'Le falta:\n' + falta.join('\n') + '\n\n' : '') + 'Su enlace:\n' + enlace(rec) + '\n\n' + EMPRESA.firmaRRHH;
   }
   function msgLab(rec) {
-    return 'Hola ' + primer(rec.nombre) + ', ya puede ir a su evaluación pre empleo.\n\n• Vaya a Laboratorios Referencia con su cédula.\n• Diga que va de parte de ' + EMPRESA.nombre + '.\n• No tiene que pagar nada.\n\nCuando vaya, márquelo en su enlace (paso 9):\n' + enlace(rec) + '\n\n' + EMPRESA.firmaRRHH;
+    return 'Hola ' + primer(rec.nombre) + ', ya puede ir a su evaluación pre empleo. Vaya cuanto antes.\n\n• Descargue su referimiento en su enlace (paso 3) y muéstrelo en el celular o impreso.\n• Vaya a Laboratorios Referencia con su cédula.\n• Diga que va de parte de ' + EMPRESA.nombre + '.\n• No tiene que pagar nada.\n\nCuando vaya, márquelo en su enlace (paso 3):\n' + enlace(rec) + '\n\n' + EMPRESA.firmaRRHH;
   }
 
   /* ---------------- Login ---------------- */
@@ -194,7 +194,7 @@
       '<div class="grid g2"><div><div class="tiny muted">Prueba a solicitar</div><b style="font-size:1.1rem">' + esc(lab.prueba) + '</b></div><div><div class="tiny muted">Datos para el portal del laboratorio</div><div class="small">' + esc(r.nombre) + ' · ' + esc(r.cedula || 'sin cédula') + '<br>Empresa: ' + esc(EMPRESA.razon) + '</div></div></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" id="cpLab">Copiar datos</button>' + (cfg.LAB_PORTAL_URL ? '<a class="btn sm" target="_blank" href="' + esc(cfg.LAB_PORTAL_URL) + '">Abrir portal del laboratorio ↗</a>' : '') + '</div></div>' +
       '<div style="margin-top:14px" class="grid g2"><div><label>1. Referimiento</label>' + (lab.referimiento ? '<div class="aviso ok" style="margin:0 0 8px">Generado ' + fechaHora(lab.referimientoEn) + '. El candidato ya ve las instrucciones para ir.</div>' : '<button class="btn sm pri" id="labRef">Marcar referimiento generado</button> ') +
-      '<label class="btn sm" style="margin-top:6px">Subir referimiento (opcional)<input type="file" class="hidden" id="upRef" accept="application/pdf,image/*"></label>' + (lab.referimientoArchivo ? ' <button class="btn sm" data-ver="' + lab.referimientoArchivo.fileId + '">👁 Ver</button>' : '') +
+      '<label class="btn sm" style="margin-top:6px">Subir referimiento (el candidato lo descarga)<input type="file" class="hidden" id="upRef" accept="application/pdf,image/*"></label>' + (lab.referimientoArchivo ? ' <button class="btn sm" data-ver="' + lab.referimientoArchivo.fileId + '">👁 Ver</button>' : '') +
       (lab.referimiento && !lab.asistio ? '<div style="margin-top:8px"><a class="btn sm ok" target="_blank" href="' + wa(r, msgLab(r)) + '">WhatsApp: avisar que puede ir</a></div>' : '') + '</div>' +
       '<div><label>2. Resultado</label><select id="labRes"><option value="">Pendiente</option><option value="apto"' + (lab.resultado === 'apto' ? ' selected' : '') + '>Apto para trabajar</option><option value="no_apto"' + (lab.resultado === 'no_apto' ? ' selected' : '') + '>No apto</option></select>' +
       '<div style="margin-top:8px"><label class="btn sm">Subir resultado<input type="file" class="hidden" id="upRes" accept="application/pdf,image/*"></label>' + (lab.resultadoArchivo ? ' <button class="btn sm" data-ver="' + lab.resultadoArchivo.fileId + '">👁 Ver resultado</button>' : '') + '</div>' +
