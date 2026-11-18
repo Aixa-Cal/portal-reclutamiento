@@ -54,6 +54,13 @@ async function nuevoLienzo(colorHex) {
     z.y -= 14; z.page.drawLine({ start: { x: M, y: z.y }, end: { x: W - M, y: z.y }, thickness: 0.6, color: rgb(LINEA) }); z.y -= 6;
   };
   /* filas de campos: [[etiqueta, valor], ...] en n columnas */
+  /* Respuesta en negro y negrita, debajo de la pregunta */
+  z.respuesta = function (v) {
+    z.espacio(18);
+    z.page.drawText('Respuesta:', { x: M, y: z.y - 10, size: 9, font: f, color: rgb(GRIS) });
+    z.page.drawText(limpiarTxt(String(v || '—').toUpperCase()), { x: M + f.widthOfTextAtSize('Respuesta:', 9) + 6, y: z.y - 10, size: 10.5, font: fb, color: rgb(NEGRO) });
+    z.y -= 18;
+  };
   z.campos = function (pares, cols) {
     cols = cols || 2; var ancho = (W - 2 * M) / cols;
     for (var i = 0; i < pares.length; i += cols) {
@@ -139,11 +146,11 @@ async function pdfDeclaracion(d, cli, firma, meta) {
   z.texto('Propósito: identificar relaciones personales y comerciales del colaborador y sus familiares cercanos que puedan estar vinculadas a ' + cli.nombre + ', sus suplidores o relacionados comerciales. Esta información no se divulga públicamente; se obtiene únicamente para fines internos.', { size: 8.5, color: GRIS });
   z.seccion('1. Familiares cercanos (cónyuge/pareja, hijos, padres, hermanos, dependientes)');
   z.tabla(['Nombre', 'Cédula', 'Relación'], (d.familiares || []).map(function (r) { return [r.nombre, r.cedula, r.relacion]; }), [0.45, 0.25, 0.3]);
-  z.seccion('2. ¿Tiene familiares trabajando en ' + cli.nombre + ' o para un contratista exclusivo?  Respuesta: ' + siNo(d.p2));
+  z.seccion('2. ¿Tiene familiares trabajando en ' + cli.nombre + ' o para un contratista exclusivo?'); z.respuesta(siNo(d.p2));
   if (d.p2 === 'si') z.tabla(['Nombre', 'Cédula', 'Relación', 'Área / Contratista'], (d.p2filas || []).map(function (r) { return [r.nombre, r.cedula, r.relacion, r.entidad]; }), [0.32, 0.2, 0.2, 0.28]);
-  z.seccion('3. ¿Desempeña otros puestos fuera de su función (empleo, consultoría, negocio propio)?  Respuesta: ' + siNo(d.p3));
+  z.seccion('3. ¿Desempeña otros puestos fuera de su función (empleo, consultoría, negocio propio)?'); z.respuesta(siNo(d.p3));
   if (d.p3 === 'si') z.tabla(['Nombre', 'Cédula', 'Entidad', 'Responsabilidad'], (d.p3filas || []).map(function (r) { return [r.nombre, r.cedula, r.entidad, r.relacion]; }), [0.3, 0.2, 0.25, 0.25]);
-  z.seccion('4. ¿Usted o sus familiares cercanos controlan alguna entidad?  Respuesta: ' + siNo(d.p4));
+  z.seccion('4. ¿Usted o sus familiares cercanos controlan alguna entidad?'); z.respuesta(siNo(d.p4));
   if (d.p4 === 'si') z.tabla(['Nombre', 'Cédula', 'Entidad', 'Relación'], (d.p4filas || []).map(function (r) { return [r.nombre, r.cedula, r.entidad, r.relacion]; }), [0.3, 0.2, 0.25, 0.25]);
   z.seccion('Declaración');
   z.texto('Certifico que la información proporcionada en este documento está completa y es verídica. Me comprometo a reportar al departamento de Recursos Humanos cualquier novedad respecto a los puntos tratados en el documento que se presente luego de la entrega del mismo.', { size: 9 });
