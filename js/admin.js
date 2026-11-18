@@ -237,6 +237,17 @@
       '<div class="tiny muted" style="margin-top:6px">' + (lab.asistio ? 'El candidato indicó que fue el ' + esc(lab.fechaAsistencia) : 'El candidato aún no indica que fue.') + '</div></div></div>' +
       '<div class="campo" style="margin-top:10px"><label>Notas internas del laboratorio</label><input id="labNotas" value="' + esc(lab.notas) + '"></div></div>';
 
+    // CV y reportes de evaluación (solo RRHH)
+    var rr = r.rrhh || {};
+    function bloqueRRHH(tipo, ayuda) {
+      var arr = rr[tipo] || [];
+      return '<div class="doc-row" style="align-items:flex-start"><div class="t"><div style="font-weight:600;font-size:.92rem">' + TIPOS_RRHH[tipo].titulo + '</div><div class="tiny muted">' + ayuda + '</div>' +
+        (arr.length ? '<div class="archivos">' + arr.map(function (a) { return '<span style="display:inline-flex;gap:4px"><button class="btn sm" data-ver="' + a.fileId + '">👁 ' + esc(a.nombre) + '</button><button class="btn sm mal" title="Quitar del expediente" data-quitarrrhh="' + tipo + '|' + a.fileId + '">×</button></span>'; }).join('') + '</div>' : '<div class="tiny muted" style="margin-top:4px">Sin archivos</div>') + '</div>' +
+        '<label class="btn sm pri">⬆ Subir<input type="file" class="hidden" data-subirrrhh="' + tipo + '" accept="application/pdf,image/*,.doc,.docx" multiple></label></div>';
+    }
+    h += '<div class="card"><h3>CV y reportes de evaluación</h3><p class="small muted">Solo los ve RRHH. Se incluyen en el expediente PDF: el CV después de la portada y los reportes al final.</p>' +
+      bloqueRRHH('cv', 'Currículum del candidato.') + bloqueRRHH('reportes', 'Briefing, resultados de pruebas u otros reportes. Puede subir varios.') + '</div>';
+
     // Evaluación del puesto
     var ev = r.evaluacion || {};
     h += '<div class="card"><h3>Evaluación del puesto</h3><p class="small muted">Constancia de conocimientos para el puesto (sin nota). Pegue el enlace: el candidato lo verá como el paso 4 y la hará cuando esté listo.</p>' +
@@ -336,6 +347,15 @@
       var copia = JSON.parse(JSON.stringify(r)); copia.referencia.formulario = leerRef();
       try { descargar(new Blob([await pdfReferencia(copia)], { type: 'application/pdf' }), 'Referencia laboral - ' + r.nombre + '.pdf'); } catch (e) { toast(e.message, 'mal'); }
     };
+    $$('[data-subirrrhh]').forEach(function (inp) { inp.onchange = async function () {
+      var fs = Array.prototype.slice.call(inp.files || []); if (!fs.length) return; toast('Subiendo…');
+      try { var arr = []; for (var i = 0; i < fs.length && i < 5; i++) arr.push(await prepararArchivo(fs[i])); REC = await call('admin.subirRRHH', { id: r.id, tipo: inp.getAttribute('data-subirrrhh'), archivos: arr }); pintarDetalle(); toast('Archivo guardado', 'ok'); } catch (e) { toast(e.message, 'mal'); }
+    }; });
+    $$('[data-quitarrrhh]').forEach(function (b) { b.onclick = async function () {
+      if (!confirm('¿Quitar este archivo del expediente? (sigue guardado en Drive)')) return;
+      var x = b.getAttribute('data-quitarrrhh').split('|');
+      try { REC = await call('admin.quitarRRHH', { id: r.id, tipo: x[0], fileId: x[1] }); pintarDetalle(); } catch (e) { toast(e.message, 'mal'); }
+    }; });
     $('#evGuardar').onclick = function () {
       var url = $('#evUrl').value.trim(); if (url && !/^https?:\/\//i.test(url)) return toast('El enlace debe empezar con https://', 'mal');
       var cambios = [['evaluacion.url', url], ['evaluacion.nombre', $('#evNom').value.trim()], ['evaluacion.instrucciones', $('#evIns').value.trim()]];
@@ -367,6 +387,7 @@
         var zip = new JSZip(), lista = [];
         DOCS.forEach(function (d) { (r.docs[d.id].archivos || []).forEach(function (a) { lista.push(a); }); });
         if (r.lab.resultadoArchivo) lista.push(r.lab.resultadoArchivo);
+        ((r.rrhh || {}).cv || []).concat((r.rrhh || {}).reportes || []).forEach(function (a) { lista.push(a); });
         for (var i = 0; i < lista.length; i++) { prog.textContent = 'Descargando ' + (i + 1) + ' de ' + lista.length + '…'; var f = await call('admin.archivo', { fileId: lista[i].fileId }); zip.file(lista[i].nombre, b64aBytes(f.b64)); }
         descargar(await zip.generateAsync({ type: 'blob' }), 'Documentos - ' + r.nombre + '.zip'); prog.textContent = 'ZIP descargado.';
       } catch (e) { toast(e.message, 'mal'); }

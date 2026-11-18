@@ -193,7 +193,8 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   if (rec.referencia.verificada) z.campos([['Referencia', (ref0.nombre || '') + (ref0.cargo ? ', ' + ref0.cargo : '') + (ref0.empresa ? ' – ' + ref0.empresa : '') + (ref0.telefono ? ' · ' + ref0.telefono : '')],
     ['Comentarios de la referencia', rec.referencia.comentarios]], 1);
   z.seccion('Contenido');
-  var lista = [];
+  var lista = [], rr = rec.rrhh || {};
+  if ((rr.cv || []).length) lista.push({ n: '—', t: TIPOS_RRHH.cv.titulo, archivos: rr.cv });
   DOCS.forEach(function (doc) {
     var d = rec.docs[doc.id];
     if (doc.tipo === 'laboratorio') { if (rec.lab.resultadoArchivo) lista.push({ n: doc.n, t: doc.titulo + ' (resultado)', archivos: [rec.lab.resultadoArchivo] }); else lista.push({ n: doc.n, t: doc.titulo, nota: rec.lab.resultado === 'apto' ? 'Apto – resultado recibido del laboratorio' : 'Pendiente' }); return; }
@@ -201,6 +202,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
     if (d.datos && d.datos.noAplica) { lista.push({ n: doc.n, t: doc.titulo, nota: 'No aplica – ' + doc.noAplica }); return; }
     lista.push({ n: doc.n, t: doc.titulo, archivos: ordenarLados(doc, d.archivos) });
   });
+  if ((rr.reportes || []).length) lista.push({ n: '—', t: TIPOS_RRHH.reportes.titulo, archivos: rr.reportes });
   z.tabla(['#', 'Documento', 'Observación'], lista.map(function (x) { return [String(x.n), x.t, x.nota || (x.archivos && x.archivos.length ? x.archivos.length + ' archivo(s)' : x.pagina ? 'Incluido' : 'Falta')]; }), [0.06, 0.6, 0.34]);
   z.y -= 8; z.texto('Preparado por ' + EMPRESA.firmaRRHH, { size: 8.5, color: GRIS });
 
@@ -211,6 +213,13 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
     for (var j = 0; j < (x.archivos || []).length; j++) {
       var a = x.archivos[j]; if (progresoCb) progresoCb(++hechos, total, x.t);
       var f = await traerArchivo(a.fileId), bytes = b64aBytes(f.b64), mime = f.mime || a.mime || '';
+      if (!/pdf|image/.test(mime)) {
+        var pw = z.doc.addPage([z.W, z.H]);
+        pw.drawText(limpiarTxt(x.t), { x: z.M, y: z.H - z.M - 10, size: 14, font: z.fb, color: z.rgb(z.acento) });
+        pw.drawText(limpiarTxt('Archivo en formato Word u otro: ' + a.nombre), { x: z.M, y: z.H - z.M - 40, size: 10, font: z.f });
+        pw.drawText(limpiarTxt('Se entrega por separado (descárguelo en ZIP o desde Drive).'), { x: z.M, y: z.H - z.M - 56, size: 10, font: z.f, color: z.rgb(GRIS) });
+        continue;
+      }
       try {
         if (/pdf/.test(mime)) {
           var src = await L.PDFDocument.load(bytes, { ignoreEncryption: true });

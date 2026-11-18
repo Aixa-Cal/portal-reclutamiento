@@ -49,6 +49,13 @@ var API = (function () {
     'admin.crear': async function (db, r) { var rec = nuevoCandidato(r.datos || {}); db[rec.id] = rec; guardar(db); return rec; },
     'admin.cambiar': async function (db, r) { var rec = porId(db, r.id); (r.cambios || []).forEach(function (c) { adminCambiar(rec, c[0], c[1]); }); guardar(db); return rec; },
     'admin.docEstado': async function (db, r) { var rec = porId(db, r.id); adminDocEstado(rec, r.doc, r.estado, r.nota); guardar(db); return rec; },
+    'admin.subirRRHH': async function (db, r) {
+      var rec = porId(db, r.id); if (!TIPOS_RRHH[r.tipo]) throw new Error('Tipo no válido');
+      var base = ((rec.rrhh || {})[r.tipo] || []).length, metas = [];
+      for (var i = 0; i < (r.archivos || []).length; i++) metas.push(await guardarArch(rec, nombreRRHH(rec, r.tipo, base + i, ext(r.archivos[i].nombre, r.archivos[i].mime)), r.archivos[i]));
+      aplicarRRHH(rec, r.tipo, metas); guardar(db); return rec;
+    },
+    'admin.quitarRRHH': async function (db, r) { var rec = porId(db, r.id); quitarRRHH(rec, r.tipo, r.fileId); guardar(db); return rec; },
     'admin.subirLab': async function (db, r) {
       var rec = porId(db, r.id), campo = r.campo === 'resultado' ? 'resultadoArchivo' : 'referimientoArchivo';
       rec.lab[campo] = await guardarArch(rec, (campo === 'resultadoArchivo' ? '09 - Resultado evaluación pre empleo' : 'Referimiento laboratorio') + '.' + ext(r.archivo.nombre, r.archivo.mime), r.archivo);

@@ -67,6 +67,13 @@ var ACCIONES_ = {
   'admin.crear': function (r) { var rec = nuevoCandidato(r.datos || {}); guardar_(rec); return rec; },
   'admin.cambiar': function (r) { var rec = porId_(r.id); (r.cambios || []).forEach(function (c) { adminCambiar(rec, c[0], c[1]); }); guardar_(rec); return rec; },
   'admin.docEstado': function (r) { var rec = porId_(r.id); adminDocEstado(rec, r.doc, r.estado, r.nota); guardar_(rec); return rec; },
+  'admin.subirRRHH': function (r) {
+    var rec = porId_(r.id); if (!TIPOS_RRHH[r.tipo]) throw new Error('Tipo no válido');
+    var base = ((rec.rrhh || {})[r.tipo] || []).length;
+    var metas = (r.archivos || []).map(function (f, i) { return guardarArchivo_(rec, nombreRRHH(rec, r.tipo, base + i, ext_(f.nombre, f.mime)), f); });
+    aplicarRRHH(rec, r.tipo, metas); guardar_(rec); return rec;
+  },
+  'admin.quitarRRHH': function (r) { var rec = porId_(r.id); quitarRRHH(rec, r.tipo, r.fileId); guardar_(rec); return rec; },
   'admin.subirLab': function (r) {
     var rec = porId_(r.id), campo = r.campo === 'resultado' ? 'resultadoArchivo' : 'referimientoArchivo';
     var nombre = (campo === 'resultadoArchivo' ? '09 - Resultado evaluación pre empleo' : 'Referimiento laboratorio') + '.' + ext_(r.archivo.nombre, r.archivo.mime);

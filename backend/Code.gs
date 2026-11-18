@@ -68,6 +68,13 @@ var ACCIONES_ = {
   'admin.crear': function (r) { var rec = nuevoCandidato(r.datos || {}); guardar_(rec); return rec; },
   'admin.cambiar': function (r) { var rec = porId_(r.id); (r.cambios || []).forEach(function (c) { adminCambiar(rec, c[0], c[1]); }); guardar_(rec); return rec; },
   'admin.docEstado': function (r) { var rec = porId_(r.id); adminDocEstado(rec, r.doc, r.estado, r.nota); guardar_(rec); return rec; },
+  'admin.subirRRHH': function (r) {
+    var rec = porId_(r.id); if (!TIPOS_RRHH[r.tipo]) throw new Error('Tipo no válido');
+    var base = ((rec.rrhh || {})[r.tipo] || []).length;
+    var metas = (r.archivos || []).map(function (f, i) { return guardarArchivo_(rec, nombreRRHH(rec, r.tipo, base + i, ext_(f.nombre, f.mime)), f); });
+    aplicarRRHH(rec, r.tipo, metas); guardar_(rec); return rec;
+  },
+  'admin.quitarRRHH': function (r) { var rec = porId_(r.id); quitarRRHH(rec, r.tipo, r.fileId); guardar_(rec); return rec; },
   'admin.subirLab': function (r) {
     var rec = porId_(r.id), campo = r.campo === 'resultado' ? 'resultadoArchivo' : 'referimientoArchivo';
     var nombre = (campo === 'resultadoArchivo' ? '09 - Resultado evaluación pre empleo' : 'Referimiento laboratorio') + '.' + ext_(r.archivo.nombre, r.archivo.mime);
@@ -451,6 +458,23 @@ function aplicarEvaluacion(rec, accion) {
   else if (accion === 'completar') { ev.completadaEn = ahoraISO(); registrar(rec, 'Candidato indicó que completó la evaluación del puesto'); }
   else throw new Error('Acción no válida');
   rec.evaluacion = ev; rec.actualizado = ahoraISO();
+}
+
+/* Archivos de RRHH (CV y reportes de evaluación): solo los ve RRHH y van en el expediente */
+var TIPOS_RRHH = { cv: { n: 0, titulo: 'Currículum (CV)' }, reportes: { n: 12, titulo: 'Reportes de evaluación' } };
+function aplicarRRHH(rec, tipo, metas) {
+  if (!TIPOS_RRHH[tipo]) throw new Error('Tipo no válido');
+  rec.rrhh = rec.rrhh || {}; rec.rrhh[tipo] = (rec.rrhh[tipo] || []).concat(metas);
+  registrar(rec, 'RRHH subió: ' + TIPOS_RRHH[tipo].titulo + ' (' + metas.length + ')');
+}
+function quitarRRHH(rec, tipo, fileId) {
+  rec.rrhh = rec.rrhh || {}; var antes = (rec.rrhh[tipo] || []).length;
+  rec.rrhh[tipo] = (rec.rrhh[tipo] || []).filter(function (a) { return a.fileId !== fileId; });
+  if (rec.rrhh[tipo].length !== antes) registrar(rec, 'RRHH quitó un archivo de ' + TIPOS_RRHH[tipo].titulo + ' (sigue en Drive)');
+}
+function nombreRRHH(rec, tipo, idx, ext) {
+  var t = TIPOS_RRHH[tipo], n = t.n < 10 ? '0' + t.n : String(t.n);
+  return n + ' - ' + t.titulo + ' - ' + rec.nombre + (idx > 0 ? ' (' + (idx + 1) + ')' : '') + (ext ? '.' + ext : '');
 }
 
 function enviarExpediente(rec) {

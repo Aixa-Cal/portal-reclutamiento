@@ -280,6 +280,23 @@ function aplicarEvaluacion(rec, accion) {
   rec.evaluacion = ev; rec.actualizado = ahoraISO();
 }
 
+/* Archivos de RRHH (CV y reportes de evaluación): solo los ve RRHH y van en el expediente */
+var TIPOS_RRHH = { cv: { n: 0, titulo: 'Currículum (CV)' }, reportes: { n: 12, titulo: 'Reportes de evaluación' } };
+function aplicarRRHH(rec, tipo, metas) {
+  if (!TIPOS_RRHH[tipo]) throw new Error('Tipo no válido');
+  rec.rrhh = rec.rrhh || {}; rec.rrhh[tipo] = (rec.rrhh[tipo] || []).concat(metas);
+  registrar(rec, 'RRHH subió: ' + TIPOS_RRHH[tipo].titulo + ' (' + metas.length + ')');
+}
+function quitarRRHH(rec, tipo, fileId) {
+  rec.rrhh = rec.rrhh || {}; var antes = (rec.rrhh[tipo] || []).length;
+  rec.rrhh[tipo] = (rec.rrhh[tipo] || []).filter(function (a) { return a.fileId !== fileId; });
+  if (rec.rrhh[tipo].length !== antes) registrar(rec, 'RRHH quitó un archivo de ' + TIPOS_RRHH[tipo].titulo + ' (sigue en Drive)');
+}
+function nombreRRHH(rec, tipo, idx, ext) {
+  var t = TIPOS_RRHH[tipo], n = t.n < 10 ? '0' + t.n : String(t.n);
+  return n + ' - ' + t.titulo + ' - ' + rec.nombre + (idx > 0 ? ' (' + (idx + 1) + ')' : '') + (ext ? '.' + ext : '');
+}
+
 function enviarExpediente(rec) {
   exigirAbierto(rec);
   var faltan = DOCS.filter(function (doc) { return doc.tipo !== 'laboratorio' && !pasoHecho(rec, doc.id); });
