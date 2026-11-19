@@ -208,7 +208,7 @@ var CLIENTES = {
     nombre: 'Altice Dominicana',
     razon: 'Altice Dominicana, S.A.',
     colores: { pri: '#028BFF', osc: '#0070D1', suave: '#E6F3FF' },
-    firma: 'manuscrita', // documentos impresos y firmados a mano
+    firma: 'digital', // antes: 'manuscrita' (impresos y firmados a mano)
     plantillas: {
       solicitud: 'formularios/altice-solicitud-empleo.pdf',
       declaracion: 'formularios/altice-declaracion-relaciones.pdf'
@@ -388,7 +388,7 @@ function pasoHecho(rec, docId) {
   if (d.estado === 'rechazado') return false;
   if (def.tipo === 'laboratorio') return !!rec.lab.asistio;
   if (def.tipo === 'datos' || def.tipo === 'induccion') return !!(d.datos && d.datos.completo);
-  if (def.tipo === 'referencia') { var r0 = d.datos && d.datos.refs && d.datos.refs[0]; return !!(r0 && r0.nombre && r0.telefono && r0.empresa && r0.trabajaAun); }
+  if (def.tipo === 'referencia') { var r0 = d.datos && d.datos.refs && d.datos.refs[0]; if (d.datos && d.datos.primerEmpleo) return !!(r0 && r0.nombre && r0.telefono && r0.relacion); return !!(r0 && r0.nombre && r0.telefono && r0.empresa && r0.trabajaAun); }
   if (d.datos && d.datos.noAplica) return true;
   if (def.id === 'declaracion' && !(d.datos && d.datos.familiares)) return false;
   if (def.lados && d.estado !== 'aprobado') {
@@ -410,7 +410,8 @@ function cedulaVencida(rec) { return !!rec.cedulaVence && new Date(rec.cedulaVen
 function alertas(rec) {
   var a = [], ref = ((rec.docs.referencia.datos || {}).refs || [])[0] || {}, t = rec.tareas || {};
   if (cedulaVencida(rec)) a.push({ t: 'Cédula vencida', mal: true });
-  if (ref.trabajaAun === 'si') a.push({ t: 'Aún trabaja con la referencia', mal: true });
+  if ((rec.docs.referencia.datos || {}).primerEmpleo) a.push({ t: 'Primer empleo: verificar referencia personal' });
+  else if (ref.trabajaAun === 'si') a.push({ t: 'Aún trabaja con la referencia', mal: true });
   if (rec.familiares.declara === 'si') a.push({ t: 'Familiar en la empresa', mal: true });
   if ((rec.docs.ars.datos || {}).noAplica && !t.ars) a.push({ t: 'Afiliar a ARS' });
   var cliA = CLIENTES[rec.cliente] || {};
@@ -534,6 +535,12 @@ function aplicarDatos(rec, docId, datos) {
   }
   if (def.tipo === 'referencia') {
     var refs = (datos.refs || []).filter(function (r) { return r && r.nombre; });
+    if (datos.primerEmpleo) {
+      if (!refs.length || !refs[0].telefono || !refs[0].relacion) throw new Error('Escriba el nombre, teléfono y relación de su referencia personal');
+      d.datos = { primerEmpleo: true, refs: refs }; d.estado = 'recibido'; d.actualizado = ahoraISO();
+      registrar(rec, 'Candidato indicó que es su primer empleo y envió referencias personales');
+      return;
+    }
     if (!refs.length || !refs[0].telefono || !refs[0].empresa) throw new Error('Escriba el nombre, teléfono y empresa de su supervisor');
     if (!refs[0].trabajaAun) throw new Error('Indique si todavía trabaja en esa empresa');
     d.datos = { refs: refs }; d.estado = 'recibido'; d.actualizado = ahoraISO();

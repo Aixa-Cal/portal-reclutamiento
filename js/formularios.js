@@ -105,8 +105,9 @@ function htmlSolicitud(cli, vac, nombre) {
     '<fieldset><legend>Composición familiar</legend>' + repetible('familia', [{ k: 'nombre', label: 'Nombre' }, { k: 'parentesco', label: 'Parentesco' }, { k: 'ocupacion', label: 'Ocupación' }], { item: 'familiar' }) + '</fieldset>' +
     '<fieldset><legend>Educación</legend>' + repetible('educacion', [{ k: 'nivel', label: 'Estudios', options: ['Bachillerato', 'Universidad', 'Técnico / Comercial', 'Otros'] }, { k: 'centro', label: 'Centro docente' }, { k: 'titulo', label: 'Título obtenido' }, { k: 'desde', label: 'Desde (año)' }, { k: 'hasta', label: 'Hasta (año)' }], { item: 'estudio' }) +
     inp('idiomas', 'Idiomas (lee / habla / escribe)', { ph: 'Ej.: Español nativo, inglés básico' }) + '</fieldset>' +
-    '<fieldset><legend>Empleos anteriores</legend>' + repetible('empleos', [{ k: 'empresa', label: 'Empresa' }, { k: 'telefono', label: 'Teléfono' }, { k: 'cargo', label: 'Cargo desempeñado' }, { k: 'salario', label: 'Último salario' }, { k: 'jefe', label: 'Jefe inmediato y cargo' }, { k: 'ingreso', label: 'Fecha de ingreso' }, { k: 'salida', label: 'Fecha de salida' }, { k: 'causa', label: 'Causa de salida' }], { item: 'empleo', max: 3 }) + '</fieldset>' +
-    '<fieldset><legend>Referencias personales</legend>' + repetible('refPersonales', [{ k: 'nombre', label: 'Nombre' }, { k: 'ocupacion', label: 'Ocupación' }, { k: 'lugar', label: 'Lugar' }, { k: 'telefono', label: 'Teléfono' }], { item: 'referencia', max: 3 }) + '</fieldset>' +
+    '<label class="check" style="margin:4px 0 12px"><input type="checkbox" name="primerEmpleo"> Es mi primer empleo (no tengo experiencia laboral)</label>' +
+    '<fieldset data-empleos><legend>Empleos anteriores</legend>' + repetible('empleos', [{ k: 'empresa', label: 'Empresa' }, { k: 'telefono', label: 'Teléfono' }, { k: 'cargo', label: 'Cargo desempeñado' }, { k: 'salario', label: 'Último salario' }, { k: 'jefe', label: 'Jefe inmediato y cargo' }, { k: 'ingreso', label: 'Fecha de ingreso' }, { k: 'salida', label: 'Fecha de salida' }, { k: 'causa', label: 'Causa de salida' }], { item: 'empleo', max: 3 }) + '</fieldset>' +
+    '<fieldset><legend>Referencias personales</legend><p class="small muted" data-nota-primer>Si es su primer empleo, escriba aquí al menos una persona que le conozca (no familiar).</p>' + repetible('refPersonales', [{ k: 'nombre', label: 'Nombre' }, { k: 'ocupacion', label: 'Ocupación' }, { k: 'lugar', label: 'Lugar' }, { k: 'telefono', label: 'Teléfono' }], { item: 'referencia', max: 3 }) + '</fieldset>' +
     '<fieldset><legend>Autorización y firma</legend><p class="small muted">Autorizo a ' + esc(cli.razon) + ' y a ' + esc(EMPRESA.razon) + ' a verificar mis referencias, récords e informaciones, y a solicitar mi reporte de crédito. Certifico que todo lo escrito es cierto. Esta autorización dura dos (2) años.</p>' +
     '<label class="check"><input type="checkbox" name="acepto"> Certifico que la información es verídica y acepto la autorización.</label><div style="height:10px"></div><div class="firma-box"></div></fieldset>' +
     '</form>';
@@ -118,7 +119,7 @@ function htmlDeclaracion(cli, nombre) {
     '<div class="grid g2">' + inp('nombre', 'Su nombre completo', { req: 1, val: nombre }) + inp('cedula', 'Su cédula', { req: 1 }) + '</div>' +
     '<fieldset><legend>1. Sus familiares cercanos</legend><p class="small muted">Cónyuge o pareja, hijos, padres, hermanos y personas que dependen de usted.</p>' +
     repetible('familiares', [{ k: 'nombre', label: 'Nombre' }, { k: 'cedula', label: 'Cédula' }, { k: 'relacion', label: 'Relación' }], { item: 'familiar' }) + '</fieldset>' +
-    '<fieldset><legend>2. Familiares en ' + esc(cli.nombre) + '</legend>' + radioSN('p2', '¿Tiene algún familiar (abuelos, padres, hijos, hermanos, primos, tíos, sobrinos) trabajando en ' + cli.nombre + ' o para un contratista de ' + cli.nombre + '?', true) +
+    '<fieldset><legend>2. Familiares en ' + esc(cli.nombre) + '</legend>' + radioSN('p2', '¿Tiene algún familiar (abuelos, padres, hijos, hermanos, primos, tíos, sobrinos) trabajando en ' + cli.nombre + ' o para un contratista de ' + cli.nombre + (cli.id === 'altice' ? ' (por ejemplo, SADOTEL)' : '') + '?', true) +
     '<div data-si="p2" class="hidden">' + repetible('p2filas', c4('Área o contratista'), { item: 'familiar' }) + '</div></fieldset>' +
     '<fieldset><legend>3. Otros trabajos o negocios</legend>' + radioSN('p3', '¿Trabaja en otra empresa, como consultor, o tiene negocio propio?', true) +
     '<div data-si="p3" class="hidden">' + repetible('p3filas', c4('Entidad'), { item: 'fila' }) + '</div></fieldset>' +
@@ -129,6 +130,8 @@ function htmlDeclaracion(cli, nombre) {
 }
 
 function activarSiNo(root) {
+  var pe = function () { var c = $('[name=primerEmpleo]', root), fs = $('[data-empleos]', root); if (c && fs) fs.classList.toggle('hidden', c.checked); };
+  root.addEventListener('change', pe); setTimeout(pe, 0);
   root.addEventListener('change', function () {
     $$('[data-si]', root).forEach(function (d) { var r = $('input[name="' + d.getAttribute('data-si') + '"]:checked', root); d.classList.toggle('hidden', !(r && r.value === 'si')); });
   });

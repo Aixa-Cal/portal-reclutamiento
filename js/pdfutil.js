@@ -129,7 +129,7 @@ async function pdfSolicitud(d, cli, firma, meta) {
   z.tabla(['Estudios', 'Desde', 'Hasta', 'Centro docente', 'Título obtenido'], (d.educacion || []).map(function (r) { return [r.nivel, r.desde, r.hasta, r.centro, r.titulo]; }), [0.18, 0.1, 0.1, 0.32, 0.3]);
   z.campos([['Idiomas', d.idiomas]], 1);
   z.seccion('Empleos anteriores');
-  z.tabla(['Empresa / Teléfono', 'Jefe inmediato y cargo', 'Cargo desempeñado / Salario', 'Ingreso - Salida', 'Causa de salida'],
+  if (d.primerEmpleo) z.respuesta('Primer empleo – sin experiencia laboral'); else z.tabla(['Empresa / Teléfono', 'Jefe inmediato y cargo', 'Cargo desempeñado / Salario', 'Ingreso - Salida', 'Causa de salida'],
     (d.empleos || []).map(function (r) { return [r.empresa + (r.telefono ? ' · ' + r.telefono : ''), r.jefe, r.cargo + (r.salario ? ' · RD$' + r.salario : ''), (r.ingreso || '') + ' - ' + (r.salida || ''), r.causa]; }), [0.22, 0.2, 0.22, 0.16, 0.2]);
   z.seccion('Referencias personales');
   z.tabla(['Nombre', 'Ocupación', 'Lugar', 'Teléfono'], (d.refPersonales || []).map(function (r) { return [r.nombre, r.ocupacion, r.lugar, r.telefono]; }), [0.32, 0.24, 0.24, 0.2]);
@@ -179,10 +179,12 @@ async function pdfDeclaracionLB(d, cli, firma, meta) {
 /* ---------- Solicitud de referencias laborales ---------- */
 function dibujarReferencia(z, rec) {
   var F = rec.referencia.formulario, refs = ((rec.docs.referencia.datos || {}).refs || []);
-  z.encabezado('Solicitud de referencias laborales', 'Candidato: ' + rec.nombre + (rec.cedula ? ' · Cédula ' + rec.cedula : '') + ' · ' + CLIENTES[rec.cliente].nombre);
+  var esPrimer = !!(rec.docs.referencia.datos || {}).primerEmpleo;
+  z.encabezado(esPrimer ? 'Referencia personal (primer empleo)' : 'Solicitud de referencias laborales', 'Candidato: ' + rec.nombre + (rec.cedula ? ' · Cédula ' + rec.cedula : '') + ' · ' + CLIENTES[rec.cliente].nombre);
   if (!F) {
     z.texto('Referencia pendiente de verificar. Contactos suministrados por el candidato:', { size: 9, color: GRIS });
-    refs.forEach(function (r, k) { z.seccion('Supervisor ' + (k + 1)); z.campos([['Nombre', r.nombre], ['Cargo', r.cargo], ['Empresa', r.empresa], ['Teléfono', r.telefono]], 2); });
+    refs.forEach(function (r, k) { if (esPrimer) { z.seccion('Referencia personal ' + (k + 1)); z.campos([['Nombre', r.nombre], ['Relación', r.relacion], ['Ocupación', r.ocupacion], ['Teléfono', r.telefono]], 2); return; }
+      z.seccion('Supervisor ' + (k + 1)); z.campos([['Nombre', r.nombre], ['Cargo', r.cargo], ['Empresa', r.empresa], ['Teléfono', r.telefono]], 2); });
     return;
   }
   z.seccion('Datos del empleo');
@@ -214,7 +216,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   function est(v) { return v === 'ok' ? 'Completado' : v === 'mal' ? 'Con observación' : 'Pendiente'; }
   var ref0 = ((rec.docs.referencia.datos || {}).refs || [])[0] || {};
   z.campos([['Documentos', est(dep.docs)], ['Evaluación pre empleo', rec.lab.resultado === 'apto' ? 'APTO para trabajar' : rec.lab.resultado === 'no_apto' ? 'NO APTO' : 'Pendiente'],
-    ['Referencia laboral', rec.referencia.verificada ? (rec.referencia.resultado === 'negativa' ? 'Verificada – negativa' : rec.referencia.resultado === 'no_localizable' ? 'No localizable' : 'Verificada – positiva') : 'Pendiente'],
+    [(rec.docs.referencia.datos || {}).primerEmpleo ? 'Referencia personal (primer empleo)' : 'Referencia laboral', rec.referencia.verificada ? (rec.referencia.resultado === 'negativa' ? 'Verificada – negativa' : rec.referencia.resultado === 'no_localizable' ? 'No localizable' : 'Verificada – positiva') : 'Pendiente'],
     ['Evaluación del puesto', !(rec.evaluacion || {}).url ? 'No aplica' : rec.evaluacion.completadaEn ? 'Completada el ' + fechaCorta(rec.evaluacion.completadaEn) + ' (constancia de conocimientos)' : 'Pendiente'],
     ['Relaciones / familiares en ' + cli.nombre, rec.familiares.verificado ? (rec.familiares.conflicto ? 'Con conflicto' : rec.familiares.declara === 'si' ? 'Relación declarada – verificada sin conflicto' : 'Sin familiares en la empresa – verificado') : 'Pendiente']], 2);
   if (rec.referencia.verificada) z.campos([['Referencia', (ref0.nombre || '') + (ref0.cargo ? ', ' + ref0.cargo : '') + (ref0.empresa ? ' – ' + ref0.empresa : '') + (ref0.telefono ? ' · ' + ref0.telefono : '')],

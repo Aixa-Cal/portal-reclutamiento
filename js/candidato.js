@@ -228,7 +228,7 @@
         return h + archivosHtml(d) + zonaSubir(doc, d);
       }
       // digital
-      if (d.hecho && !d._editar) return '<div class="aviso ok">Formulario llenado y firmado digitalmente.</div><button class="btn sm" data-reeditar>Volver a llenarlo</button>';
+      if (d.hecho && !d._editar) return '<div class="aviso ok">' + (d.datos && d.datos.codigo ? 'Formulario llenado y firmado digitalmente.' : 'Formulario recibido.') + '</div><button class="btn sm" data-reeditar>Volver a llenarlo</button>';
       h += '<p class="small muted">Llene el formulario aquí. Al final, marque la casilla y firme con su dedo. Se guardará como PDF firmado.</p>';
       h += doc.id === 'solicitud' ? htmlSolicitud(c, V.vacante, V.nombre) : (c.formDeclaracion === 'labarra' ? htmlDeclaracionLB(c, V.nombre) : htmlDeclaracion(c, V.nombre));
       h += '<button class="btn pri block lg" data-firmar style="margin-top:6px">Firmar y enviar</button>';
@@ -243,14 +243,22 @@
         '<div class="grid g2" style="align-items:end"><div class="campo"><label>¿Qué día fue?</label><input type="date" id="labfecha" value="' + new Date().toISOString().slice(0, 10) + '"></div><div class="campo"><button class="btn pri block" data-labok>Ya me realicé la evaluación</button></div></div>';
     }
     if (doc.tipo === 'referencia') {
-      var refs = (d.datos && d.datos.refs) || [];
+      var dr = d.datos || {}, refs = dr.refs || [], pe = d._primer != null ? d._primer : !!dr.primerEmpleo;
+      var sel = '<div class="campo"><label>¿Ha trabajado antes?</label><div class="radios"><label><input type="radio" name="primerEmp" value="no"' + (pe ? '' : ' checked') + '> Sí, he trabajado</label><label><input type="radio" name="primerEmp" value="si"' + (pe ? ' checked' : '') + '> No, este es mi primer empleo</label></div></div>';
+      if (pe) {
+        var rp = function (i) { var x = refs[i] || {}, req = i ? '' : ' *';
+          function f(k, l, t, ph) { return '<div class="campo"><label>' + l + req + '</label><input' + (t ? ' type="' + t + '"' : '') + (ph ? ' placeholder="' + ph + '"' : '') + ' data-ref="' + i + '" data-k="' + k + '" value="' + esc(x[k] || '') + '"></div>'; }
+          return '<fieldset><legend>' + (i ? 'Otra referencia personal (opcional)' : 'Referencia personal') + '</legend><div class="grid g2">' + f('nombre', 'Nombre completo') + f('telefono', 'Teléfono', 'tel') +
+            f('relacion', '¿Qué es de usted?', '', 'Ej.: vecino, profesor, pastor') + '<div class="campo"><label>Ocupación</label><input data-ref="' + i + '" data-k="ocupacion" value="' + esc(x.ocupacion || '') + '"></div></div></fieldset>'; };
+        return '<p class="small"><b>Hágalo primero.</b></p>' + sel + '<p class="small">Como es su primer empleo, escriba una <b>persona que le conozca</b> y pueda dar referencia de usted. <b>No puede ser un familiar.</b> Nosotros la llamaremos.</p>' + rp(0) + rp(1) + '<button class="btn pri" data-guardarref data-primer="1">Guardar</button>';
+      }
       function r(i) { var x = refs[i] || {}, req = i ? '' : ' *';
         function f(k, l, t) { return '<div class="campo"><label>' + l + req + '</label><input' + (t ? ' type="' + t + '"' : '') + ' data-ref="' + i + '" data-k="' + k + '" value="' + esc(x[k] || '') + '"></div>'; }
         return '<fieldset><legend>' + (i ? 'Otro supervisor (opcional)' : 'Supervisor de su último trabajo') + '</legend><div class="grid g2">' +
         f('nombre', 'Nombre del supervisor') + f('telefono', 'Teléfono', 'tel') + f('empresa', 'Empresa') + '<div class="campo"><label>Cargo del supervisor</label><input data-ref="' + i + '" data-k="cargo" value="' + esc(x.cargo || '') + '"></div></div>' +
         '<div class="campo"><label>¿Todavía trabaja en esa empresa?' + req + '</label><div class="radios"><label><input type="radio" name="trab' + i + '" data-ref="' + i + '" data-k="trabajaAun" value="no"' + (x.trabajaAun === 'no' ? ' checked' : '') + '> No, ya salí</label><label><input type="radio" name="trab' + i + '" data-ref="' + i + '" data-k="trabajaAun" value="si"' + (x.trabajaAun === 'si' ? ' checked' : '') + '> Sí, todavía trabajo ahí</label></div></div>' +
         '<div class="campo"><label>Fecha en que salió (mes y año)</label><input data-ref="' + i + '" data-k="fechaSalida" placeholder="Ej.: marzo 2025" value="' + esc(x.fechaSalida || '') + '"></div></fieldset>'; }
-      return '<p class="small"><b>Hágalo primero.</b> Escriba el nombre, teléfono y empresa de su <b>supervisor en su último trabajo</b>. Nosotros lo llamaremos para su referencia laboral.</p>' + r(0) + r(1) + '<button class="btn pri" data-guardarref>Guardar</button>';
+      return '<p class="small"><b>Hágalo primero.</b></p>' + sel + '<p class="small">Escriba el nombre, teléfono y empresa de su <b>supervisor en su último trabajo</b>. Nosotros lo llamaremos para su referencia laboral.</p>' + r(0) + r(1) + '<button class="btn pri" data-guardarref>Guardar</button>';
     }
     return h;
   }
@@ -328,9 +336,10 @@
       paso.addEventListener('input', function () { var rr = [{}, {}]; refInputs.forEach(function (el) { if (el.type === 'radio' && !el.checked) return; rr[+el.getAttribute('data-ref')][el.getAttribute('data-k')] = el.value; }); try { localStorage.setItem(claveRef, JSON.stringify(rr)); } catch (e) {} });
       paso.addEventListener('change', function () { paso.dispatchEvent(new Event('input')); });
     }
+    $$('input[name=primerEmp]', paso).forEach(function (el) { el.onchange = function () { d._primer = el.value === 'si'; pintar(); }; });
     var gr = $('[data-guardarref]', paso); if (gr) gr.onclick = function () {
-      var refs = [{}, {}]; $$('[data-ref]', paso).forEach(function (el) { if (el.type === 'radio' && !el.checked) return; refs[+el.getAttribute('data-ref')][el.getAttribute('data-k')] = el.value.trim(); });
-      accion(function () { return API.call('cand.datos', { token: token, doc: 'referencia', datos: { refs: refs } }); }, 'Referencia guardada');
+      var primer = gr.hasAttribute('data-primer'), refs = [{}, {}]; $$('[data-ref]', paso).forEach(function (el) { if (el.type === 'radio' && !el.checked) return; refs[+el.getAttribute('data-ref')][el.getAttribute('data-k')] = el.value.trim(); });
+      accion(function () { return API.call('cand.datos', { token: token, doc: 'referencia', datos: { refs: refs, primerEmpleo: primer } }); }, 'Referencia guardada');
     };
     var re = $('[data-reeditar]', paso); if (re) re.onclick = function () { d._editar = true; pintar(); };
     var gd = $('[data-guardardatos]', paso); if (gd) {
@@ -385,6 +394,7 @@
       $('[data-firmar]', paso).onclick = function () {
         var faltan = validarForm(form), datos = leerForm(form);
         if (faltan.length) return toast('Complete: ' + faltan.slice(0, 3).join(', ') + (faltan.length > 3 ? '…' : ''), 'mal');
+        if (docId === 'solicitud' && datos.primerEmpleo && !(datos.refPersonales || []).some(function (x) { return x.nombre && x.telefono; })) return toast('Como es su primer empleo, escriba al menos una referencia personal con teléfono', 'mal');
         if (!datos.acepto) return toast('Marque la casilla de aceptación', 'mal');
         if (pad.vacia()) return toast('Falta su firma', 'mal');
         var firma = pad.png(), meta = metaFirma(datos); meta.posicion = V.vacante.posicion;
