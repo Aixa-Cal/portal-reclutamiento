@@ -122,13 +122,19 @@
 
   function induccionHtml(d) {
     var mods = modulosLaBarra(V), di = d.datos || {}, leidos = di.leidos || [], quiz = di.quiz, cl = cli();
-    var h = '<p class="small">Lea cada tema y toque <b>Ya lo leí</b>. Si prefiere, toque <b>Escuchar</b>. Después vea el menú y responda ' + QUIZ_LB.length + ' preguntas.</p>' +
+    var h = '<p class="small">Son temas cortos, con ejemplos. Lea cada uno (o toque <b>🔊 Escuchar</b> y se lo leemos) y toque <b>Ya lo leí</b>. Al final vea el menú y responda ' + QUIZ_LB.length + ' preguntas fáciles.</p>' +
       '<div class="aviso">' + leidos.length + ' de ' + mods.length + ' temas leídos · Cuestionario: ' + (quiz ? quiz.correctas + ' de ' + quiz.total + ' correctas' : 'pendiente') + '</div>';
     mods.forEach(function (m, i) {
       var ok = leidos.indexOf(m.id) >= 0;
-      h += '<div class="card flat" data-mod="' + m.id + '" style="padding:14px 16px;margin-bottom:10px;' + (ok ? 'border-color:#bfe8d6' : '') + '"><div style="display:flex;gap:10px;align-items:center"><div class="num" style="width:30px;height:30px;font-size:.8rem;' + (ok ? 'background:var(--ok);color:#fff' : '') + '">' + (ok ? '✓' : i + 1) + '</div><div style="flex:1"><b>' + esc(m.titulo) + '</b><div class="tiny muted">' + esc(m.sub) + '</div></div></div>' +
-        m.p.map(function (t) { return '<p class="small" style="margin:8px 0">' + esc(t) + '</p>'; }).join('') +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-escuchar="' + m.id + '">🔊 Escuchar</button>' + (ok ? '<span class="pill ok">Leído</span>' : '<button class="btn sm pri" data-leido="' + m.id + '">Ya lo leí</button>') + '</div></div>';
+      h += '<div class="card flat mod-lb" data-mod="' + m.id + '"' + (ok ? ' style="border-color:#bfe8d6"' : '') + '>' +
+        '<div class="mod-h"><div class="mod-ico">' + (ok ? '✓' : (m.icono || (i + 1))) + '</div><div style="flex:1"><b>' + esc(m.titulo) + '</b><div class="tiny muted">' + esc(m.sub || '') + '</div></div></div>' +
+        (m.clave ? '<div class="mod-clave">' + esc(m.clave) + '</div>' : '') +
+        (m.p || []).map(function (t) { return '<p class="small" style="margin:6px 0">' + esc(t) + '</p>'; }).join('') +
+        (m.si || m.no ? '<div class="sino">' + (m.si ? '<div class="si"><b>✓ Así sí</b><ul>' + m.si.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '') +
+          (m.no ? '<div class="no"><b>✗ Así no</b><ul>' + m.no.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '') + '</div>' : '') +
+        (m.ejemplo ? '<div class="ejemplo"><div class="tiny" style="font-weight:700;letter-spacing:.03em">EJEMPLO DE LA VIDA REAL</div><p class="small" style="margin:4px 0 8px"><b>' + esc(m.ejemplo.t) + '</b></p>' +
+          '<p class="small" style="margin:4px 0">✅ ' + esc(m.ejemplo.bien) + '</p><p class="small" style="margin:4px 0">❌ ' + esc(m.ejemplo.mal) + '</p></div>' : '') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-escuchar="' + m.id + '">🔊 Escuchar</button>' + (ok ? '<span class="pill ok">Leído</span>' : '<button class="btn sm pri" data-leido="' + m.id + '">Ya lo leí</button>') + '</div></div>';
     });
     h += '<div class="card flat" style="padding:14px 16px"><b>Nuestro menú</b><p class="small muted">Toque una imagen para verla grande.</p><div class="grid g2">' +
       MENU_LB.map(function (u) { return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="Menú La Barra" style="width:100%;border-radius:10px;border:1px solid var(--linea)"></a>'; }).join('') + '</div>';
@@ -359,7 +365,7 @@
     $$('[data-escuchar]', paso).forEach(function (b) { b.onclick = function () {
       if (!window.speechSynthesis) return toast('Su teléfono no permite escuchar el texto', 'mal');
       var m = modulosLaBarra(V).filter(function (x) { return x.id === b.getAttribute('data-escuchar'); })[0];
-      speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(m.titulo + '. ' + m.p.join(' ')); u.lang = 'es-ES'; u.rate = 0.95; speechSynthesis.speak(u);
+      speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(textoModulo(m)); u.lang = 'es-ES'; u.rate = 0.95; speechSynthesis.speak(u);
     }; });
     var eq = $('[data-enviarquiz]', paso); if (eq) eq.onclick = function () {
       var resp = {}, falt = 0, ok = 0;
