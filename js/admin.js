@@ -423,7 +423,7 @@
     $('#datosGuardar').onclick = function () {
       var cambios = []; $$('[data-campo]').forEach(function (el) {
         var ruta = el.getAttribute('data-campo'), actual = ruta.split('.').reduce(function (o, k) { return o == null ? '' : o[k]; }, r), v = ruta === 'vacante.contratoMeses' ? Number(el.value) : el.value;
-        if (String(actual) !== String(v)) cambios.push([ruta, v]);
+        if (String(actual == null ? '' : actual) !== String(v == null ? '' : v)) cambios.push([ruta, v]);
       });
       if (!cambios.length) return toast('Sin cambios'); cambiar(cambios, 'Datos guardados');
     };
