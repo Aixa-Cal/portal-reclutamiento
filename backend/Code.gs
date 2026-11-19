@@ -229,6 +229,7 @@ var CLIENTES = {
     nombre: 'Grupo La Barra',
     razon: 'Inversiones BA AR, S.R.L.',
     directo: true, // contratación directa (no subcontratación)
+    diaLibreTrasDias: 15, // a los 15 días de entrenamiento el líder asigna el día libre
     turnos: ['Mañana · 7:00 a. m. a 3:00 p. m.', 'Tarde · 3:00 p. m. a 11:00 p. m.', 'Noche · 11:00 p. m. a 7:00 a. m.', 'Rotativo'],
     pagina: 'lb.html', // página propia: el enlace por WhatsApp muestra Grupo La Barra
     marca: { nombre: 'Grupo La Barra', razon: 'Inversiones BA AR, S.R.L.', logo: 'LB', firmaRRHH: 'RRHH – Grupo La Barra' },
@@ -245,8 +246,8 @@ var CLIENTES = {
     tiendas: ['La Barra Atala', 'La Barra Atalaya', 'La Barra Miraflores', 'Zona Presidente', 'Food Shop Miraflores', 'Car Wash Miraflores'],
     tiendasPopular: ['Food Shop Miraflores', 'Car Wash Miraflores', 'Zona Presidente'],
     puestos: [
-      { nombre: 'Colaborador de línea', salario: '17,701.25', propina: '5,000', propinaDespues: '5,000', entrenamientoDias: 15 },
-      { nombre: 'Sandwichero/a', salario: '17,701.25', propina: '5,000', propinaDespues: '7,500' },
+      { nombre: 'Colaborador de línea', salario: '17,701.25', propina: '5,000', propinaDespues: '5,000' },
+      { nombre: 'Sandwichero/a', salario: '17,701.25', propina: '5,000', propinaDespues: '7,500', entrenamientoCompleto: '3 meses' },
       { nombre: 'Líder de turno', salario: '17,701.25', propina: '', propinaDespues: '' }
     ],
     vacante: { posicion: 'Colaborador de línea', salario: '17,701.25', contratoMeses: 0 },
@@ -259,6 +260,14 @@ function puestoDe(clienteId, nombre) {
   var c = CLIENTES[clienteId] || {}, n = String(nombre || '').toLowerCase();
   if (n === 'servicio al cliente') n = 'colaborador de línea';
   return (c.puestos || []).filter(function (p) { return p.nombre.toLowerCase() === n; })[0] || null;
+}
+/* Texto del entrenamiento y día libre (La Barra: 15 días para todos; sandwichero: entrenamiento completo de 3 meses) */
+function textoEntrenamiento(clienteId, posicion) {
+  var c = CLIENTES[clienteId] || {}, p = puestoDe(clienteId, posicion) || {};
+  if (!c.diaLibreTrasDias) return '';
+  return p.entrenamientoCompleto ?
+    'Su entrenamiento completo toma ' + p.entrenamientoCompleto + '. A los primeros ' + c.diaLibreTrasDias + ' días, su líder le asigna su día libre semanal.' :
+    'Su entrenamiento dura ' + c.diaLibreTrasDias + ' días. Al completarlo, su líder le asigna su día libre semanal.';
 }
 /* Salario quincenal aproximado después de AFP (2.87%) y SFS (3.04%), y del ISR si aplica (escala anual DGII). */
 function numeroRD(v) { return parseFloat(String(v || '').replace(/[^0-9.]/g, '')) || 0; }

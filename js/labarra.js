@@ -5,7 +5,7 @@ function dinero(v) { return 'RD$' + String(v || '').replace(/^RD\$/, ''); }
 function modulosLaBarra(V) {
   var t = V.tienda || 'su tienda', banco = V.banco, vac = V.vacante || {}, sal = dinero(vac.salario || '17,701.25');
   var nq = netoQuincenal(vac.salario), pu = puestoDe(V.cliente || 'labarra', vac.posicion);
-  var diaLibre = pu && pu.entrenamientoDias ? 'Su entrenamiento dura ' + pu.entrenamientoDias + ' días. Al completarlo, su líder le asigna su día libre semanal.' : 'Tiene un día libre por semana, asignado por su líder.';
+  var diaLibre = textoEntrenamiento(V.cliente || 'labarra', vac.posicion) || 'Tiene un día libre por semana, asignado por su líder.';
   var pago = t === 'Food Shop Miraflores' ?
     { id: 'pago', titulo: 'Su salario y su incentivo', sub: 'Fechas claras, consultas sencillas', p: [
       'Su salario base mensual es ' + sal + '. Se paga en dos quincenas: los días 15 y 30.' + (nq ? ' Cada quincena recibe aproximadamente ' + formatoRD(nq.neto) + ', después de los aportes de ley (AFP' + (nq.isr ? ', SFS e ISR' : ' y SFS') + ').' : ''),
@@ -29,7 +29,7 @@ function modulosLaBarra(V) {
     { id: 'bienvenida', titulo: '¡Bienvenido/a al equipo de La Barra!', sub: 'Le deseamos mucho éxito en esta nueva etapa', p: [
       'Aquí encontrará la información que necesita para su ingreso y para conocer nuestros procedimientos.',
       (V.turno ? 'Su posición es ' + (vac.posicion || '') + ' en ' + t + ', turno ' + V.turno + '. Su supervisor le confirmará el horario exacto y su día libre.' : 'Al ingresar, se le informará su posición, sucursal, horario y salario.') + ' A su salario se le aplicarán los descuentos de ley.',
-      (V.lider ? 'Su líder es ' + V.lider + (V.liderTelefono ? ' (' + V.liderTelefono + ')' : '') + '. Le' : 'Su supervisor le') + ' explicará sus funciones y le acompañará durante su entrenamiento' + (pu && pu.entrenamientoDias ? ', que dura ' + pu.entrenamientoDias + ' días' : '') + '. Si tiene alguna duda, pregunte antes de realizar una tarea.'] },
+      (V.lider ? 'Su líder es ' + V.lider + (V.liderTelefono ? ' (' + V.liderTelefono + ')' : '') + '. Le' : 'Su supervisor le') + ' explicará sus funciones y le acompañará durante su entrenamiento' + (pu && pu.entrenamientoCompleto ? ', que toma ' + pu.entrenamientoCompleto : ', que dura 15 días') + '. Si tiene alguna duda, pregunte antes de realizar una tarea.'] },
     pago,
     { id: 'normas', titulo: 'Presentación y normas de trabajo', sub: 'Prepárese para cada turno', p: [
       'Preséntese puntualmente, con su uniforme completo, limpio y en buenas condiciones.',

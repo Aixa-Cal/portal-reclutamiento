@@ -108,7 +108,7 @@
       (nq ? '<li>Cada quincena recibe aproximadamente <b>' + formatoRD(nq.neto) + '</b>, después de los aportes de ley (AFP y SFS' + (nq.isr ? ' e ISR' : '') + ').</li>' : '') +
       (food ? '<li>Incentivo por desempeño de hasta RD$5,000 mensuales, según su evaluación.</li>' :
         (vac.propina ? '<li>Propina asignada: <b>RD$' + esc(vac.propina) + '</b> mensual, se paga el día 5' + (vac.propinaDespues && vac.propinaDespues !== vac.propina ? '. Después de 3 meses: <b>RD$' + esc(vac.propinaDespues) + '</b>' : '') + '.</li>' : '')) +
-      (pu && pu.entrenamientoDias ? '<li>Su entrenamiento dura <b>' + pu.entrenamientoDias + ' días</b>. Al completarlo, su líder le asigna su día libre semanal.</li>' : '<li>Un día libre por semana, asignado por su líder.</li>') +
+      '<li>' + (textoEntrenamiento(V.cliente, vac.posicion) || 'Un día libre por semana, asignado por su líder.') + '</li>' +
       '<li>La nómina se paga por <b>' + esc(V.banco) + '</b>.</li></ul>' +
       (V.enviadoEn ? '' : '<div class="aviso ' + (horas < 0 ? 'mal' : horas < 24 ? 'pend' : '') + '">' + (horas < 0 ? 'Su plazo de ' + EMPRESA.plazoDias + ' días ya venció. Complete lo antes posible.' : 'Tiene hasta el <b>' + vence.toLocaleString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '</b> para completar todo (' + EMPRESA.plazoDias + ' días).') + '</div>') +
       '<details><summary style="cursor:pointer;font-weight:600;color:var(--azul)">Antes de empezar, lea esto</summary><ol class="small">' +
