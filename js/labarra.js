@@ -4,15 +4,17 @@ function dinero(v) { return 'RD$' + String(v || '').replace(/^RD\$/, ''); }
 
 function modulosLaBarra(V) {
   var t = V.tienda || 'su tienda', banco = V.banco, vac = V.vacante || {}, sal = dinero(vac.salario || '17,701.25');
+  var nq = netoQuincenal(vac.salario), pu = puestoDe(V.cliente || 'labarra', vac.posicion);
+  var diaLibre = pu && pu.entrenamientoDias ? 'Su entrenamiento dura ' + pu.entrenamientoDias + ' días. Al completarlo, su líder le asigna su día libre semanal.' : 'Tiene un día libre por semana, asignado por su líder.';
   var pago = t === 'Food Shop Miraflores' ?
     { id: 'pago', titulo: 'Su salario y su incentivo', sub: 'Fechas claras, consultas sencillas', p: [
-      'Su salario base mensual es ' + sal + '. Se paga en dos partes: los días 15 y 30, con los descuentos correspondientes.',
+      'Su salario base mensual es ' + sal + '. Se paga en dos quincenas: los días 15 y 30.' + (nq ? ' Cada quincena recibe aproximadamente ' + formatoRD(nq.neto) + ', después de los aportes de ley (AFP' + (nq.isr ? ', SFS e ISR' : ' y SFS') + ').' : ''),
       'Puede recibir un incentivo por desempeño de hasta RD$5,000 mensuales. Su monto depende de la evaluación de su desempeño. Administración le explicará las condiciones y la fecha de pago.',
-      'Tiene un día libre por semana, asignado por su líder. Si tiene dudas sobre su pago o incentivo, consulte a Administración.'] } :
+      diaLibre + ' Si tiene dudas sobre su pago o incentivo, consulte a Administración.'] } :
     { id: 'pago', titulo: 'Su salario y sus propinas', sub: 'Fechas claras, consultas sencillas', p: [
-      'Su salario base mensual es ' + sal + '. Se paga en dos partes: los días 15 y 30, con los descuentos correspondientes.',
+      'Su salario base mensual es ' + sal + '. Se paga en dos quincenas: los días 15 y 30.' + (nq ? ' Cada quincena recibe aproximadamente ' + formatoRD(nq.neto) + ', después de los aportes de ley (AFP' + (nq.isr ? ', SFS e ISR' : ' y SFS') + ').' : ''),
       vac.propina ? 'Su propina asignada mensual inicial es ' + dinero(vac.propina) + '. Se paga el día 5.' + (vac.propinaDespues && vac.propinaDespues !== vac.propina ? ' Después de 3 meses será ' + dinero(vac.propinaDespues) + '.' : '') : 'Administración le explicará las propinas e incentivos de su puesto.',
-      'La propina diaria se distribuye al cierre del turno. Tiene un día libre por semana, asignado por su líder. Si tiene dudas de un pago, indique a Administración su nombre, tienda y período.'] };
+      'La propina diaria se distribuye al cierre del turno. ' + diaLibre + ' Si tiene dudas de un pago, indique a Administración su nombre, tienda y período.'] };
   var seguridad = t === 'Car Wash Miraflores' ?
     { id: 'seguridad', titulo: 'Su área, equipos y seguridad', sub: 'Trabaje con cuidado', p: [
       'Mantenga limpia y organizada su área de trabajo. Revise el equipo antes de utilizarlo.',
@@ -27,7 +29,7 @@ function modulosLaBarra(V) {
     { id: 'bienvenida', titulo: '¡Bienvenido/a al equipo de La Barra!', sub: 'Le deseamos mucho éxito en esta nueva etapa', p: [
       'Aquí encontrará la información que necesita para su ingreso y para conocer nuestros procedimientos.',
       (V.turno ? 'Su posición es ' + (vac.posicion || '') + ' en ' + t + ', turno ' + V.turno + '. Su supervisor le confirmará el horario exacto y su día libre.' : 'Al ingresar, se le informará su posición, sucursal, horario y salario.') + ' A su salario se le aplicarán los descuentos de ley.',
-      'Su supervisor le explicará sus funciones y le acompañará durante su entrenamiento. Si tiene alguna duda, pregunte antes de realizar una tarea.'] },
+      (V.lider ? 'Su líder es ' + V.lider + (V.liderTelefono ? ' (' + V.liderTelefono + ')' : '') + '. Le' : 'Su supervisor le') + ' explicará sus funciones y le acompañará durante su entrenamiento' + (pu && pu.entrenamientoDias ? ', que dura ' + pu.entrenamientoDias + ' días' : '') + '. Si tiene alguna duda, pregunte antes de realizar una tarea.'] },
     pago,
     { id: 'normas', titulo: 'Presentación y normas de trabajo', sub: 'Prepárese para cada turno', p: [
       'Preséntese puntualmente, con su uniforme completo, limpio y en buenas condiciones.',

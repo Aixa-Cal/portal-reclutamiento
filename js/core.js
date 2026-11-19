@@ -55,14 +55,33 @@ var CLIENTES = {
     tiendas: ['La Barra Atala', 'La Barra Atalaya', 'La Barra Miraflores', 'Zona Presidente', 'Food Shop Miraflores', 'Car Wash Miraflores'],
     tiendasPopular: ['Food Shop Miraflores', 'Car Wash Miraflores', 'Zona Presidente'],
     puestos: [
-      { nombre: 'Servicio al cliente', salario: '17,701.25', propina: '5,000', propinaDespues: '5,000' },
+      { nombre: 'Colaborador de línea', salario: '17,701.25', propina: '5,000', propinaDespues: '5,000', entrenamientoDias: 15 },
       { nombre: 'Sandwichero/a', salario: '17,701.25', propina: '5,000', propinaDespues: '7,500' },
       { nombre: 'Líder de turno', salario: '17,701.25', propina: '', propinaDespues: '' }
     ],
-    vacante: { posicion: 'Servicio al cliente', salario: '17,701.25', contratoMeses: 0 },
+    vacante: { posicion: 'Colaborador de línea', salario: '17,701.25', contratoMeses: 0 },
     protocoloUrl: ''
   }
 };
+
+/* Puesto de La Barra por nombre ('Servicio al cliente' es el nombre anterior de 'Colaborador de línea') */
+function puestoDe(clienteId, nombre) {
+  var c = CLIENTES[clienteId] || {}, n = String(nombre || '').toLowerCase();
+  if (n === 'servicio al cliente') n = 'colaborador de línea';
+  return (c.puestos || []).filter(function (p) { return p.nombre.toLowerCase() === n; })[0] || null;
+}
+/* Salario quincenal aproximado después de AFP (2.87%) y SFS (3.04%), y del ISR si aplica (escala anual DGII). */
+function numeroRD(v) { return parseFloat(String(v || '').replace(/[^0-9.]/g, '')) || 0; }
+function formatoRD(n) { return 'RD$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function netoQuincenal(salario) {
+  var s = numeroRD(salario); if (!s) return null;
+  var tss = Math.min(s, 232230) * 0.0304 + Math.min(s, 464460) * 0.0287, anual = (s - tss) * 12, isr = 0;
+  if (anual > 867123.01) isr = 79776 + (anual - 867123) * 0.25;
+  else if (anual > 624329.01) isr = 31216 + (anual - 624329) * 0.20;
+  else if (anual > 416220.01) isr = (anual - 416220) * 0.15;
+  var neto = s - tss - isr / 12;
+  return { bruto: s / 2, aportes: tss / 2, isr: isr / 24, neto: neto / 2 };
+}
 
 /* Empresa que contrata y firma los mensajes: La Barra (directo) o Asesores Técnicos (tercerización) */
 function empleador(clienteId) { var c = CLIENTES[clienteId]; return (c && c.marca) ? c.marca : { nombre: EMPRESA.nombre, razon: EMPRESA.razon, logo: 'ATE', firmaRRHH: EMPRESA.firmaRRHH }; }
@@ -165,6 +184,8 @@ function nuevoCandidato(d) {
     sexo: d.sexo,
     tienda: String(d.tienda || '').trim(),
     turno: String(d.turno || '').trim(),
+    lider: String(d.lider || '').trim(),
+    liderTelefono: String(d.liderTelefono || '').trim(),
     vacante: {
       posicion: d.posicion || cli.vacante.posicion,
       salario: d.salario || cli.vacante.salario,
@@ -281,7 +302,7 @@ function vistaCandidato(rec) {
                      archivos: (d.archivos || []).map(function (a) { return { nombre: a.nombre, lado: a.lado || '' }; }), hecho: pasoHecho(rec, doc.id) };
   });
   return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
-           tienda: rec.tienda || '', turno: rec.turno || '', banco: bancoDeTienda(rec.cliente, rec.tienda), empleador: emp, defs: defs, orden: ordenDe(rec),
+           tienda: rec.tienda || '', turno: rec.turno || '', lider: rec.lider || '', liderTelefono: rec.liderTelefono || '', banco: bancoDeTienda(rec.cliente, rec.tienda), empleador: emp, defs: defs, orden: ordenDe(rec),
            cartaBanco: !!rec.cartaBancoArchivo,
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
            lab: { listo: !!rec.lab.referimiento, referimiento: !!rec.lab.referimientoArchivo, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia },
@@ -410,7 +431,7 @@ var ASPECTOS_REF = ['Puntualidad', 'Responsabilidad', 'Calidad del trabajo', 'Co
 var NIVELES_REF = ['Excelente', 'Muy bueno', 'Bueno', 'Aceptable', 'Deficiente'];
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(tienda|turno|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var RUTAS_ADMIN = /^(tienda|turno|lider|liderTelefono|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;

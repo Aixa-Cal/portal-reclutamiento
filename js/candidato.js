@@ -99,15 +99,16 @@
     return '<div class="archivos">' + d.archivos.map(function (a) { return '<span class="pill ok">📎 ' + esc(a.nombre) + '</span>'; }).join('') + '</div>';
   }
   function bienvenidaDirecta(c, vence, horas) {
-    var e = emp(), vac = V.vacante || {}, food = V.tienda === 'Food Shop Miraflores';
+    var e = emp(), vac = V.vacante || {}, food = V.tienda === 'Food Shop Miraflores', nq = netoQuincenal(vac.salario), pu = puestoDe(V.cliente, vac.posicion);
     return '<div class="card" style="border-top:4px solid var(--azul)"><h1>Hola, ' + esc(primerNombre()) + '</h1>' +
       '<p>¡Nos alegra que siga en el proceso para unirse a <b>' + esc(e.nombre) + '</b>! Complete aquí su expediente de ingreso, paso a paso.</p>' +
-      '<p>Posición: <b>' + esc(vac.posicion || '') + '</b>' + (V.tienda ? ' · Tienda: <b>' + esc(V.tienda) + '</b>' : '') + (V.turno ? '<br>Turno: <b>' + esc(V.turno) + '</b>' : '') + '</p>' +
+      '<p>Posición: <b>' + esc(vac.posicion || '') + '</b>' + (V.tienda ? ' · Tienda: <b>' + esc(V.tienda) + '</b>' : '') + (V.turno ? '<br>Turno: <b>' + esc(V.turno) + '</b>' : '') + (V.lider ? '<br>Su líder: <b>' + esc(V.lider) + '</b>' + (V.liderTelefono ? ' · ' + esc(V.liderTelefono) : '') : '') + '</p>' +
       '<h3>Condiciones</h3><ul class="small">' +
-      (vac.salario ? '<li>Salario base mensual: <b>RD$' + esc(vac.salario) + '</b>. Se paga los días 15 y 30, con los descuentos de ley.</li>' : '') +
+      (vac.salario ? '<li>Salario base mensual: <b>RD$' + esc(vac.salario) + '</b>. Se paga en dos quincenas, los días 15 y 30.</li>' : '') +
+      (nq ? '<li>Cada quincena recibe aproximadamente <b>' + formatoRD(nq.neto) + '</b>, después de los aportes de ley (AFP y SFS' + (nq.isr ? ' e ISR' : '') + ').</li>' : '') +
       (food ? '<li>Incentivo por desempeño de hasta RD$5,000 mensuales, según su evaluación.</li>' :
         (vac.propina ? '<li>Propina asignada: <b>RD$' + esc(vac.propina) + '</b> mensual, se paga el día 5' + (vac.propinaDespues && vac.propinaDespues !== vac.propina ? '. Después de 3 meses: <b>RD$' + esc(vac.propinaDespues) + '</b>' : '') + '.</li>' : '')) +
-      '<li>Un día libre por semana, asignado por su líder.</li>' +
+      (pu && pu.entrenamientoDias ? '<li>Su entrenamiento dura <b>' + pu.entrenamientoDias + ' días</b>. Al completarlo, su líder le asigna su día libre semanal.</li>' : '<li>Un día libre por semana, asignado por su líder.</li>') +
       '<li>La nómina se paga por <b>' + esc(V.banco) + '</b>.</li></ul>' +
       (V.enviadoEn ? '' : '<div class="aviso ' + (horas < 0 ? 'mal' : horas < 24 ? 'pend' : '') + '">' + (horas < 0 ? 'Su plazo de ' + EMPRESA.plazoDias + ' días ya venció. Complete lo antes posible.' : 'Tiene hasta el <b>' + vence.toLocaleString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '</b> para completar todo (' + EMPRESA.plazoDias + ' días).') + '</div>') +
       '<details><summary style="cursor:pointer;font-weight:600;color:var(--azul)">Antes de empezar, lea esto</summary><ol class="small">' +
