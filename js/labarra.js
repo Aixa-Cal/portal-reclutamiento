@@ -41,16 +41,29 @@ function modulosLaBarra(V) {
       'El orden es siempre el mismo: 1) se toma la orden, 2) se confirma (repítala al cliente), 3) se cobra y 4) se entrega la orden.',
       'Si no puede recordar todo el pedido, anótelo. Es mejor anotar que equivocarse.',
       'Antes de entregar, revise que la orden sea igual a lo que pidió el cliente.'] },
-    { id: 'inocuidad', titulo: 'Higiene, inocuidad y temperaturas', sub: 'Esto aplica para todos', p: [
-      'Lávese las manos al llegar, después de ir al baño, de tocar dinero o basura, y cada vez que cambie de tarea.',
-      'Respete las temperaturas: lo frío se mantiene frío y lo caliente se mantiene caliente. Revise las neveras y avise si algo no está a la temperatura correcta.',
-      'No mezcle alimentos crudos con cocidos. Revise fechas de vencimiento y no use nada que esté en mal estado.',
-      'Si tiene síntomas que puedan afectar los alimentos, avise a su supervisor antes de trabajar.'] }
+    { id: 'higiene', titulo: 'Higiene personal (normas ServSafe)', sub: 'Esto aplica para todos', p: [
+      'Lávese las manos por al menos 20 segundos, con agua tibia y jabón, y séquelas con papel. Hágalo al llegar, después de ir al baño, de tocar dinero, basura, el celular o carne cruda, y cada vez que cambie de tarea.',
+      'Use guantes para tocar comida lista para comer. Cámbielos si se rompen o se ensucian, al cambiar de tarea, después de tocar carne cruda y por lo menos cada 4 horas. Los guantes no sustituyen el lavado de manos.',
+      'Uñas cortas y limpias, cabello recogido con gorra, sin prendas en manos y muñecas.',
+      'No venga a trabajar si tiene vómitos, diarrea, piel u ojos amarillos, o dolor de garganta con fiebre. Avise a su supervisor antes del turno.'] },
+    { id: 'temperaturas', titulo: 'Temperaturas y alimentos seguros (ServSafe)', sub: 'Esto aplica para todos', p: [
+      'Zona de peligro: entre 5 °C y 57 °C las bacterias crecen rápido. Mantenga los alimentos fuera de esa zona.',
+      'Lo frío, frío: neveras a 5 °C o menos. Congeladores a −18 °C o menos.',
+      'Lo caliente, caliente: mantenga la comida caliente a 57 °C o más.',
+      'Cocción: el pollo debe llegar a 74 °C por dentro. La carne molida (burgers) a 68 °C. Para recalentar, llévelo a 74 °C.',
+      'Use el termómetro de alimentos: métalo en la parte más gruesa. Si una nevera o un alimento no está a la temperatura correcta, avise de inmediato a su supervisor.',
+      'Un alimento que pasó más de 4 horas en la zona de peligro se bota.',
+      'Descongele en la nevera, nunca sobre la mesa.'] },
+    { id: 'contaminacion', titulo: 'Evite la contaminación cruzada', sub: 'Cada cosa en su lugar', p: [
+      'Use tablas y utensilios separados para lo crudo y lo listo para comer. Lave y desinfecte después de cada uso.',
+      'En la nevera, guarde lo listo para comer arriba y las carnes crudas abajo. El pollo crudo va en la parte más baja.',
+      'Rote los productos: lo primero que entra es lo primero que sale. Etiquete con fecha y revise los vencimientos. No use nada en mal estado.',
+      'Alergias: si un cliente avisa que es alérgico (por ejemplo, al maní, la leche, el huevo, el trigo o los mariscos), avise a su supervisor y evite el contacto con ese ingrediente.'] }
   ].concat(sandw ? [
     { id: 'sandwichero', titulo: 'Para sandwicheros', sub: 'Su puesto es especializado', p: [
       'Cada sándwich tiene su receta, su pan, sus porciones y su orden de armado. Apréndalos con su supervisor y respételos siempre.',
       'Use las medidas exactas. No cambie ingredientes ni porciones por su cuenta.',
-      'Cuide las temperaturas de las carnes, quesos y salsas, y la limpieza de la plancha y los utensilios.',
+      'Carnes, quesos, vegetales y salsas se guardan a 5 °C o menos. El pollo se cocina hasta 74 °C por dentro y las burgers hasta 68 °C. Limpie y desinfecte la plancha y los utensilios.',
       'Fíjese en los detalles del pedido: tipo de pan, queso danés o cheddar, con o sin vegetales.'] }] : []).concat([
     { id: 'comunicacion', titulo: 'Canal de comunicación', sub: 'A quién acudir', p: [
       'Su supervisor es su primer contacto para el trabajo diario: horarios, permisos, ausencias, funciones y novedades de la sucursal.',
@@ -81,6 +94,8 @@ var QUIZ_LB = [
   { id: 'orden', q: '¿Cuál es el orden correcto para atender un pedido?', o: ['Cobrar, tomar la orden y entregar', 'Tomar la orden, entregar y cobrar', 'Tomar la orden, confirmarla, cobrar y entregar'], c: 2, e: 'Primero se toma la orden, se confirma, se cobra y luego se entrega.' },
   { id: 'anotar', q: 'Si no puede recordar todo el pedido, ¿qué debe hacer?', o: ['Anotarlo', 'Adivinar lo que falta', 'Preparar lo que recuerde'], c: 0, e: 'Si no puede retener el pedido, anótelo. Es mejor anotar que equivocarse.' },
   { id: 'temp', q: '¿Qué hace si una nevera no está a la temperatura correcta?', o: ['Nada, no es su trabajo', 'Avisar a su supervisor', 'Seguir usando los alimentos'], c: 1, e: 'Las temperaturas son responsabilidad de todos. Avise de inmediato a su supervisor.' },
+  { id: 'frio', q: '¿A qué temperatura deben estar las neveras?', o: ['A 5 °C o menos', 'A 15 °C', 'A temperatura ambiente'], c: 0, e: 'Lo frío se mantiene a 5 °C o menos. Entre 5 °C y 57 °C es la zona de peligro.' },
+  { id: 'manos', q: '¿Cuánto tiempo debe durar el lavado de manos?', o: ['5 segundos', 'Al menos 20 segundos', 'No hace falta si usa guantes'], c: 1, e: 'Lávese las manos por al menos 20 segundos. Los guantes no sustituyen el lavado.' },
   { id: 'club', q: '¿En qué pan se prepara el Barra Club?', o: ['Pan brioche', 'Tres lonjas de pan cuadrado', 'Pan de agua'], c: 1, e: 'El Barra Club se prepara en tres lonjas de pan cuadrado.' },
   { id: 'cubana', q: '¿Cuál de estos ingredientes lleva La Barra Cubana?', o: ['Pepinillos', 'Piña', 'Salsa BBQ'], c: 0, e: 'La Barra Cubana lleva pierna, queso danés, jamón, pepinillos, mayonesa y mostaza.' },
   { id: 'alitas', q: '¿Cuál de estas salsas puede elegir para las alitas?', o: ['Salsa de chocolate', 'Salsa de fresa', 'Honey Mustard'], c: 2, e: 'Las salsas de las alitas son Honey Mustard, Buffalo y BBQ.' }
