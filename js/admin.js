@@ -18,25 +18,27 @@
   function fechaLimite(rec) { return new Date(venceEn(rec)).toLocaleString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }); }
   function msgInvitacion(rec) {
     var c = CLIENTES[rec.cliente], cedOk = pasoHecho(rec, 'cedula'), labOk = !!rec.lab.referimiento, ev = rec.evaluacion || {};
-    var pasos = [];
+    var pasos = [], E = empleador(rec.cliente);
+    if (rec.docs.datos) pasos.push(numeroPaso(rec, 'datos') + '. Complete *sus datos y contactos*.');
     pasos.push(numeroPaso(rec, 'cedula') + '. ' + (cedOk ? 'Su cédula ya la tenemos ✓' : 'Suba su *cédula* por ambos lados.'));
     pasos.push(numeroPaso(rec, 'referencia') + '. Escriba el contacto de su *supervisor anterior*.');
     pasos.push(numeroPaso(rec, 'laboratorio') + '. *Evaluación pre empleo:* ' + (labOk ? 'ya está lista. Descargue su referimiento y vaya *cuanto antes* a Laboratorios Referencia con su cédula. No paga nada.' : 'le avisaremos cuando pueda ir. Cuando le avisemos, vaya *cuanto antes* a Laboratorios Referencia.'));
     if (ev.url) pasos.push(numeroPaso(rec, 'evaluacion') + '. *Evaluación del puesto:* hágala cuando esté listo/a, en un lugar tranquilo.');
     return 'Hola *' + primer(rec.nombre) + '*,\n' +
-      'Le saluda RRHH de *' + EMPRESA.nombre + '*.\n\n' +
-      'Tenemos el placer de informarle que *' + c.nombre + '* desea continuar con la fase de depuración y completación de su expediente para la posición de *' + rec.vacante.posicion + '*.\n\n' +
+      'Le saluda RRHH de *' + E.nombre + '*.\n\n' +
+      (c.directo ? '¡Nos alegra que siga en el proceso para unirse a *' + E.nombre + '* como *' + rec.vacante.posicion + '*' + (rec.tienda ? ' en *' + rec.tienda + '*' : '') + '! Ahora completamos su expediente de ingreso.\n\n'
+        : 'Tenemos el placer de informarle que *' + c.nombre + '* desea continuar con la fase de depuración y completación de su expediente para la posición de *' + rec.vacante.posicion + '*.\n\n') +
       '*Complete su expediente aquí, paso a paso:*\n' + enlace(rec) + '\n\n' +
       '*Empiece por aquí:*\n' + pasos.join('\n') + '\n\n' +
       'Después suba los demás documentos que le pide el enlace.\n\n' +
       '*Plazo: ' + EMPRESA.plazoDias + ' días* (hasta el ' + fechaLimite(rec) + ').\n' +
       'Mientras antes lo complete, más rápido avanzamos con su posible fecha de ingreso.\n\n' +
-      '¿Tiene dudas? Responda a este mensaje.\n\n' + EMPRESA.firmaRRHH;
+      '¿Tiene dudas? Responda a este mensaje.\n\n' + E.firmaRRHH;
   }
   function msgRecordatorio(rec) {
-    var orden = ORDEN_CANDIDATO.filter(function (id) { return id !== 'laboratorio' && id !== 'evaluacion' && docPorId(id); });
+    var orden = ordenDe(rec).filter(function (id) { return id !== 'laboratorio' && id !== 'evaluacion' && id !== 'induccion' && docDe(rec, id); });
     var falta = orden.filter(function (id) { return !pasoHecho(rec, id); }).map(function (id) {
-      var d = docPorId(id); return '• Paso ' + numeroPaso(rec, id) + ': ' + (d.corto || d.titulo) + (id === 'covid' ? ' (opcional)' : '') + (rec.docs[id].estado === 'rechazado' ? ' — *corregir:* ' + rec.docs[id].nota : '');
+      var d = docDe(rec, id); return '• Paso ' + numeroPaso(rec, id) + ': ' + (d.corto || d.titulo) + (id === 'covid' ? ' (opcional)' : '') + (rec.docs[id].estado === 'rechazado' ? ' — *corregir:* ' + rec.docs[id].nota : '');
     });
     var ev = rec.evaluacion || {};
     if (ev.url && !ev.completadaEn) falta.push('• Paso ' + numeroPaso(rec, 'evaluacion') + ': Evaluación del puesto');
@@ -45,7 +47,7 @@
       'Le recordamos completar su expediente para *' + CLIENTES[rec.cliente].nombre + '*.\n\n' +
       (falta.length ? '*Le falta:*\n' + falta.join('\n') + '\n\n' : '') +
       '*Su enlace:*\n' + enlace(rec) + '\n\n' +
-      '*Su plazo vence el* ' + fechaLimite(rec) + '\n\n' + EMPRESA.firmaRRHH;
+      '*Su plazo vence el* ' + fechaLimite(rec) + '\n\n' + empleador(rec.cliente).firmaRRHH;
   }
   function msgLab(rec) {
     var p = numeroPaso(rec, 'laboratorio');
@@ -53,10 +55,19 @@
       'Su *evaluación pre empleo* ya está lista. Vaya *cuanto antes*.\n\n' +
       '1. Abra su enlace y en el *paso ' + p + '* descargue su *referimiento*.\n' +
       '2. Vaya a *Laboratorios Referencia* con su *cédula* y el referimiento (en el celular o impreso).\n' +
-      '3. Diga que va de parte de *' + EMPRESA.nombre + '*.\n' +
+      '3. Diga que va de parte de *' + empleador(rec.cliente).nombre + (CLIENTES[rec.cliente].directo ? ' (' + empleador(rec.cliente).razon + ')' : '') + '*.\n' +
       '4. *No tiene que pagar nada.*\n\n' +
       'Su enlace: ' + enlace(rec) + '\n\n' +
-      'Cuando vaya, márquelo en el paso ' + p + '.\n\n' + EMPRESA.firmaRRHH;
+      'Cuando vaya, márquelo en el paso ' + p + '.\n\n' + empleador(rec.cliente).firmaRRHH;
+  }
+  function msgCarta(rec) {
+    var b = bancoDeTienda(rec.cliente, rec.tienda);
+    return 'Hola *' + primer(rec.nombre) + '*,\n' +
+      'Su *carta para abrir la cuenta en ' + b + '* ya está lista.\n\n' +
+      '1. Abra su enlace y en el *paso ' + numeroPaso(rec, 'banco') + '* descargue la carta.\n' +
+      '2. Vaya a ' + b + ' con su *cédula* y la carta.\n' +
+      '3. Cuando abra la cuenta, suba la constancia en ese mismo paso.\n\n' +
+      'Su enlace: ' + enlace(rec) + '\n\n' + empleador(rec.cliente).firmaRRHH;
   }
 
   /* ---------------- Login ---------------- */
@@ -118,18 +129,29 @@
     var ops = Object.keys(CLIENTES).map(function (id) { return '<option value="' + id + '">' + esc(CLIENTES[id].nombre) + ' — firma ' + CLIENTES[id].firma + '</option>'; }).join('');
     app.innerHTML = '<div class="nuevo-grid"><div class="card nuevo-form"><h2>Nuevo candidato</h2><p class="muted small">Se crea el expediente y un enlace único para enviárselo por WhatsApp.</p>' +
       '<div class="campo"><label>1. Cédula del candidato (foto o PDF, opcional)</label><input type="file" id="n_cedfile" accept="image/*,application/pdf" multiple><div class="tiny muted" style="margin-top:4px">Súbala primero: se ve al lado para copiar los datos, y el candidato ya no tiene que subirla.</div></div>' +
-      '<div class="grid g2"><div class="campo"><label>Cliente</label><select id="n_cliente">' + ops + '</select></div><div class="campo"><label>Posición</label><input id="n_posicion"></div></div>' +
+      '<div class="grid g2"><div class="campo"><label>Empresa</label><select id="n_cliente">' + ops + '</select></div><div class="campo"><label>Posición</label><input id="n_posicion" list="n_puestos"><datalist id="n_puestos"></datalist></div></div>' +
+      '<div class="grid g3 hidden" id="lbCampos"><div class="campo"><label>Tienda *</label><select id="n_tienda"></select></div><div class="campo"><label>Propina mensual (RD$)</label><input id="n_propina"></div><div class="campo"><label>Propina después de 3 meses</label><input id="n_propina2"></div></div>' +
       '<div class="grid g2"><div class="campo"><label>Nombre completo *</label><input id="n_nombre"></div><div class="campo"><label>Cédula</label><input id="n_cedula" placeholder="000-0000000-0"></div>' +
       '<div class="campo"><label>Teléfono / WhatsApp *</label><input id="n_telefono" placeholder="809-000-0000"></div><div class="campo"><label>Correo</label><input id="n_correo" type="email"></div></div>' +
-      '<div class="grid g3"><div class="campo"><label>Salario mensual (RD$)</label><input id="n_salario"></div><div class="campo"><label>Contrato (meses)</label><input id="n_contrato" type="number" min="1"></div>' +
+      '<div class="grid g3"><div class="campo"><label>Salario mensual (RD$)</label><input id="n_salario"></div><div class="campo" id="cContrato"><label>Contrato (meses)</label><input id="n_contrato" type="number" min="1"></div>' +
       '<div class="campo"><label>Sexo · uso interno *</label><div class="radios" style="padding-top:8px"><label><input type="radio" name="n_sexo" value="F"> Femenino</label><label><input type="radio" name="n_sexo" value="M"> Masculino</label></div></div></div>' +
       '<p class="tiny muted">El sexo solo define la evaluación de laboratorio. El candidato nunca ve el tipo de prueba.</p>' +
       '<div class="campo" style="max-width:320px"><label>Fecha de vencimiento de la cédula</label><input type="date" id="n_cedvence"></div>' +
       '<div class="grid g2"><div class="campo"><label>Enlace de evaluación del puesto (opcional)</label><input id="n_evalurl" type="url" placeholder="https://…"></div><div class="campo"><label>Nombre de la evaluación</label><input id="n_evalnom" placeholder="Ej.: Prueba técnica QA"></div></div>' +
       '<button class="btn pri lg" id="crear">Crear y generar enlace</button></div>' +
       '<aside id="cedPrev" class="ced-prev hidden"></aside></div><div id="creado"></div>';
-    function prellenar() { var v = CLIENTES[$('#n_cliente').value].vacante; $('#n_posicion').value = v.posicion; $('#n_salario').value = v.salario; $('#n_contrato').value = v.contratoMeses; }
-    $('#n_cliente').onchange = prellenar; prellenar();
+    function prellenar() {
+      var c = CLIENTES[$('#n_cliente').value], v = c.vacante; $('#n_posicion').value = v.posicion; $('#n_salario').value = v.salario; $('#n_contrato').value = v.contratoMeses;
+      $('#lbCampos').classList.toggle('hidden', !c.tiendas); $('#cContrato').classList.toggle('hidden', !!c.directo);
+      $('#n_puestos').innerHTML = (c.puestos || []).map(function (p) { return '<option value="' + esc(p.nombre) + '">'; }).join('');
+      $('#n_tienda').innerHTML = c.tiendas ? '<option value="">Elija…</option>' + c.tiendas.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') : '';
+      puesto(); aplicarTema(c.id);
+    }
+    function puesto() {
+      var c = CLIENTES[$('#n_cliente').value], p = (c.puestos || []).filter(function (x) { return x.nombre === $('#n_posicion').value; })[0];
+      if (!p) return; $('#n_salario').value = p.salario || ''; $('#n_propina').value = p.propina || ''; $('#n_propina2').value = p.propinaDespues || '';
+    }
+    $('#n_cliente').onchange = prellenar; $('#n_posicion').onchange = puesto; prellenar();
     $('#n_cedula').onblur = function () { this.value = formatoCedula(this.value); };
     $('#n_cedfile').onchange = function () {
       var box = $('#cedPrev'), fs = Array.prototype.slice.call(this.files || []).slice(0, 2);
@@ -143,7 +165,9 @@
     $('#crear').onclick = async function () {
       var sx = $('input[name=n_sexo]:checked');
       var datos = { cliente: $('#n_cliente').value, posicion: $('#n_posicion').value.trim(), nombre: $('#n_nombre').value.trim(), cedula: $('#n_cedula').value.trim(), telefono: $('#n_telefono').value.trim(),
-        correo: $('#n_correo').value.trim(), salario: $('#n_salario').value.trim(), contratoMeses: $('#n_contrato').value, sexo: sx ? sx.value : '', cedulaVence: $('#n_cedvence').value, evaluacionUrl: $('#n_evalurl').value.trim(), evaluacionNombre: $('#n_evalnom').value.trim() };
+        correo: $('#n_correo').value.trim(), salario: $('#n_salario').value.trim(), contratoMeses: $('#n_contrato').value, sexo: sx ? sx.value : '', cedulaVence: $('#n_cedvence').value, evaluacionUrl: $('#n_evalurl').value.trim(), evaluacionNombre: $('#n_evalnom').value.trim(),
+        tienda: $('#n_tienda').value, propina: $('#n_propina').value.trim(), propinaDespues: $('#n_propina2').value.trim() };
+      if (CLIENTES[datos.cliente].tiendas && !datos.tienda) return toast('Elija la tienda', 'mal');
       if (datos.evaluacionUrl && !/^https?:\/\//i.test(datos.evaluacionUrl)) return toast('El enlace de evaluación debe empezar con https://', 'mal');
       if (!datos.nombre || !datos.telefono) return toast('Falta nombre o teléfono', 'mal');
       if (!datos.posicion) return toast('Escriba la posición', 'mal');
@@ -185,7 +209,7 @@
     var r = REC, c = CLIENTES[r.cliente], dep = depuracion(r), et = etapa(r), p = progreso(r);
     function sem(v, t, sub) { return '<div class="sem ' + (v === 'ok' ? 'ok' : v === 'mal' ? 'mal' : 'pend') + '"><b>' + t + '</b>' + (v === 'ok' ? 'Completo' : v === 'mal' ? 'Con observación' : 'Pendiente') + (sub ? '<div class="tiny muted">' + sub + '</div>' : '') + '</div>'; }
     var refs = ((r.docs.referencia.datos || {}).refs || []);
-    var h = '<div class="panel-h" style="border-top:5px solid ' + c.colores.pri + '"><div style="flex:1;min-width:0"><h2 style="margin:0">' + esc(r.nombre) + '</h2><div class="small muted" style="margin-top:4px">' + chipCliente(r.cliente) + ' ' + esc(r.vacante.posicion) + ' · creado ' + fechaCorta(r.creado) + '</div></div>' + pillEtapa(et) + '<button class="btn sm" id="cerrar">✕</button></div><div class="panel-b">';
+    var h = '<div class="panel-h" style="border-top:5px solid ' + c.colores.pri + '"><div style="flex:1;min-width:0"><h2 style="margin:0">' + esc(r.nombre) + '</h2><div class="small muted" style="margin-top:4px">' + chipCliente(r.cliente) + ' ' + esc(r.vacante.posicion) + (r.tienda ? ' · ' + esc(r.tienda) : '') + ' · creado ' + fechaCorta(r.creado) + '</div></div>' + pillEtapa(et) + '<button class="btn sm" id="cerrar">✕</button></div><div class="panel-b">';
 
     // Enlace y mensajes
     h += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><b>Avance del candidato</b><span>' + p.hechos + '/' + p.total + (r.enviadoEn ? ' · Envió completo ' + fechaHora(r.enviadoEn) : ' · Vence ' + fechaHora(venceEn(r))) + '</span></div><div class="barra"><i style="width:' + p.pct + '%"></i></div>' +
@@ -194,10 +218,13 @@
     var al = alertas(r);
     if (al.length) h += '<div class="card" style="padding:14px 18px"><b class="small">Atención</b><div class="archivos">' + al.map(function (x) { return '<span class="pill ' + (x.mal ? 'mal' : 'pend') + '">' + esc(x.t) + '</span>'; }).join('') + '</div>' +
       (cedulaVencida(r) ? '<p class="small" style="margin:6px 0 0">La cédula venció el ' + esc(r.cedulaVence) + '. Pida una cédula vigente antes de enviar el expediente.</p>' : '') + '</div>';
-    var tar = r.tareas || {}, sinArs = (r.docs.ars.datos || {}).noAplica, sinBanco = (r.docs.banco.datos || {}).noAplica;
-    if (sinArs || sinBanco) h += '<div class="card"><h3>Tareas de ingreso</h3>' +
+    var tar = r.tareas || {}, sinArs = (r.docs.ars.datos || {}).noAplica, sinBanco = (r.docs.banco.datos || {}).noAplica, BANCO = c.tiendas ? bancoDeTienda(r.cliente, r.tienda) : 'Banco Popular';
+    if (sinArs || sinBanco || c.tiendas) h += '<div class="card"><h3>Tareas de ingreso</h3>' +
       (sinArs ? '<label class="check" style="margin-bottom:8px"><input type="checkbox" data-tarea="ars"' + (tar.ars ? ' checked' : '') + '> No tiene ARS: hacer la solicitud de afiliación a ARS</label>' : '') +
-      (sinBanco ? '<label class="check"><input type="checkbox" data-tarea="banco"' + (tar.banco ? ' checked' : '') + '> No tiene cuenta en Banco Popular: orientarlo para abrirla al ingresar</label>' : '') + '</div>';
+      (sinBanco ? '<label class="check"><input type="checkbox" data-tarea="banco"' + (tar.banco ? ' checked' : '') + '> No tiene cuenta en ' + esc(BANCO) + ': ' + (c.tiendas ? 'enviarle la carta y confirmar la apertura' : 'orientarlo para abrirla al ingresar') + '</label>' : '') +
+      (c.tiendas ? '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="small">Carta para abrir cuenta en <b>' + esc(BANCO) + '</b>:</span>' +
+        (r.cartaBancoArchivo ? '<button class="btn sm" data-ver="' + r.cartaBancoArchivo.fileId + '">👁 Ver carta</button><a class="btn sm ok" target="_blank" href="' + wa(r, msgCarta(r)) + '">WhatsApp: carta lista</a>' : '') +
+        '<label class="btn sm">' + (r.cartaBancoArchivo ? 'Cambiar carta' : '⬆ Subir carta (el candidato la descarga)') + '<input type="file" class="hidden" id="upCarta" accept="application/pdf,image/*"></label></div>' : '') + '</div>';
 
     // Depuración
     h += '<div class="card"><h3>Depuración</h3><div class="semaforo">' + sem(dep.docs, 'Documentos', dep.pendientesRevision ? dep.pendientesRevision + ' por revisar' : '') + sem(dep.lab, 'Evaluación pre empleo', r.lab.resultado === 'apto' ? 'Apto' : '') +
@@ -209,8 +236,10 @@
 
     // Documentos
     h += '<div class="card"><h3>Documentos</h3>';
-    DOCS.forEach(function (doc) {
-      var d = r.docs[doc.id], est = d.datos && d.datos.noAplica ? '<span class="pill gris">No aplica</span>' : '<span class="pill ' + ({ aprobado: 'ok', rechazado: 'mal', recibido: 'pend' }[d.estado] || 'gris') + '">' + ({ aprobado: 'Aprobado', rechazado: 'Rechazado', recibido: 'Por revisar', pendiente: 'Pendiente' }[d.estado]) + '</span>';
+    docsDe(r).forEach(function (doc) {
+      var d = r.docs[doc.id]; if (!d) return;
+      if (doc.tipo === 'datos' || doc.tipo === 'induccion') { var ok0 = pasoHecho(r, doc.id); h += '<div class="doc-row"><div class="num" style="width:28px;height:28px;font-size:.8rem">' + doc.n + '</div><div class="t"><div style="font-weight:600;font-size:.92rem">' + esc(doc.titulo) + '</div><div class="tiny muted">Ver detalle abajo</div></div><span class="pill ' + (ok0 ? 'ok' : 'gris') + '">' + (ok0 ? 'Completo' : 'Pendiente') + '</span></div>'; return; }
+      var est = d.datos && d.datos.noAplica ? '<span class="pill gris">No aplica</span>' : '<span class="pill ' + ({ aprobado: 'ok', rechazado: 'mal', recibido: 'pend' }[d.estado] || 'gris') + '">' + ({ aprobado: 'Aprobado', rechazado: 'Rechazado', recibido: 'Por revisar', pendiente: 'Pendiente' }[d.estado]) + '</span>';
       var extra = '';
       if (doc.tipo === 'laboratorio') { extra = r.lab.asistio ? 'Fue el ' + esc(r.lab.fechaAsistencia) : (r.lab.referimiento ? 'Referimiento listo, aún no va' : 'Falta generar referimiento'); est = '<span class="pill ' + (r.lab.resultado === 'apto' ? 'ok' : r.lab.resultado === 'no_apto' ? 'mal' : 'gris') + '">' + (r.lab.resultado === 'apto' ? 'Apto' : r.lab.resultado === 'no_apto' ? 'No apto' : 'Ver abajo') + '</span>'; }
       else if (doc.tipo === 'referencia') extra = refs.length ? esc(refs.map(function (x) { return x.nombre; }).join(', ')) : 'No ha enviado';
@@ -227,7 +256,7 @@
     // Laboratorio
     var lab = r.lab;
     h += '<div class="card"><h3>Evaluación pre empleo · Laboratorios Referencia</h3><div class="interno"><div class="tiny" style="color:var(--azul);font-weight:700;margin-bottom:6px">USO INTERNO — EL CANDIDATO NO VE ESTO</div>' +
-      '<div class="grid g2"><div><div class="tiny muted">Prueba a solicitar</div><b style="font-size:1.1rem">' + esc(lab.prueba) + '</b></div><div><div class="tiny muted">Datos para el portal del laboratorio</div><div class="small">' + esc(r.nombre) + ' · ' + esc(r.cedula || 'sin cédula') + '<br>Empresa: ' + esc(EMPRESA.razon) + '</div></div></div>' +
+      '<div class="grid g2"><div><div class="tiny muted">Prueba a solicitar</div><b style="font-size:1.1rem">' + esc(lab.prueba) + '</b></div><div><div class="tiny muted">Datos para el portal del laboratorio</div><div class="small">' + esc(r.nombre) + ' · ' + esc(r.cedula || 'sin cédula') + '<br>Empresa: ' + esc(c.directo ? empleador(r.cliente).razon : EMPRESA.razon) + '</div></div></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" id="cpLab">Copiar datos</button>' + (cfg.LAB_PORTAL_URL ? '<a class="btn sm" target="_blank" href="' + esc(cfg.LAB_PORTAL_URL) + '">Abrir portal del laboratorio ↗</a>' : '') + '</div></div>' +
       '<div style="margin-top:14px" class="grid g2"><div><label>1. Referimiento</label>' + (lab.referimiento ? '<div class="aviso ok" style="margin:0 0 8px">Generado ' + fechaHora(lab.referimientoEn) + '. El candidato ya ve las instrucciones para ir.</div>' : '<button class="btn sm pri" id="labRef">Marcar referimiento generado</button> ') +
       '<label class="btn sm" style="margin-top:6px">Subir referimiento (el candidato lo descarga)<input type="file" class="hidden" id="upRef" accept="application/pdf,image/*"></label>' + (lab.referimientoArchivo ? ' <button class="btn sm" data-ver="' + lab.referimientoArchivo.fileId + '">👁 Ver</button>' : '') +
@@ -236,6 +265,22 @@
       '<div style="margin-top:8px"><label class="btn sm">Subir resultado<input type="file" class="hidden" id="upRes" accept="application/pdf,image/*"></label>' + (lab.resultadoArchivo ? ' <button class="btn sm" data-ver="' + lab.resultadoArchivo.fileId + '">👁 Ver resultado</button>' : '') + '</div>' +
       '<div class="tiny muted" style="margin-top:6px">' + (lab.asistio ? 'El candidato indicó que fue el ' + esc(lab.fechaAsistencia) : 'El candidato aún no indica que fue.') + '</div></div></div>' +
       '<div class="campo" style="margin-top:10px"><label>Notas internas del laboratorio</label><input id="labNotas" value="' + esc(lab.notas) + '"></div></div>';
+
+    // La Barra: datos y contactos + inducción
+    if (r.docs.datos) {
+      var dd = r.docs.datos.datos || {};
+      h += '<div class="card"><h3>Datos y contactos del candidato</h3>' + (dd.completo ?
+        '<div class="grid g2 small"><div>Nacimiento: <b>' + esc(dd.nacimiento || '') + '</b></div><div>Correo: <b>' + esc(dd.correo || '') + '</b></div><div>Dirección: <b>' + esc(dd.direccion || '') + '</b></div><div>Talla: <b>' + esc(dd.talla || '—') + '</b></div>' +
+        '<div>Emergencia: <b>' + esc(dd.emergenciaNombre || '') + '</b>' + (dd.emergenciaParentesco ? ' (' + esc(dd.emergenciaParentesco) + ')' : '') + ' · ' + esc(dd.emergenciaTelefono || '') + '</div></div>' +
+        '<div class="interno" style="margin-top:10px"><div class="tiny" style="color:var(--azul);font-weight:700">CONFIDENCIAL — SALUD</div><div class="small">' + (dd.salud === 'si' ? '<b>Sí</b>: ' + esc(dd.saludDetalle || '') : 'No reporta condiciones') + '</div></div>'
+        : '<p class="small muted">El candidato aún no completa sus datos.</p>') + '</div>';
+    }
+    if (r.docs.induccion) {
+      var di = r.docs.induccion.datos || {}, qz = di.quiz;
+      h += '<div class="card"><h3>Inducción · Conozca La Barra</h3><div class="small">Temas leídos: <b>' + (di.leidos || []).length + ' de ' + (di.modulosTotal || 7) + '</b> · Cuestionario: <b>' + (qz ? qz.correctas + ' de ' + qz.total + ' correctas' : 'pendiente') + '</b>' +
+        (di.requiereProtocolo ? ' · Protocolo: <b>' + (di.protocolo ? 'leído' : 'pendiente') + '</b>' : '') + '</div>' +
+        (di.completo ? '<div class="aviso ok" style="margin-top:10px">Inducción completada.</div>' : '') + '<p class="tiny muted">La inducción no confirma la contratación.</p></div>';
+    }
 
     // CV y reportes de evaluación (solo RRHH)
     var rr = r.rrhh || {};
@@ -322,6 +367,7 @@
     }
     $('#upRef').onchange = function () { subirLab(this, 'referimiento'); };
     $('#upRes').onchange = function () { subirLab(this, 'resultado'); };
+    var uc = $('#upCarta'); if (uc) uc.onchange = function () { subirLab(this, 'cartaBanco'); };
     $('#labRes').onchange = function () { cambiar([['lab.resultado', this.value]], 'Resultado guardado'); };
     $('#labNotas').onchange = function () { cambiar([['lab.notas', this.value]]); };
     var claveRefA = 'refadmin_' + r.id;
@@ -385,7 +431,7 @@
       var btn = this; btn.disabled = true; var prog = $('#expProg');
       try {
         var zip = new JSZip(), lista = [];
-        DOCS.forEach(function (d) { (r.docs[d.id].archivos || []).forEach(function (a) { lista.push(a); }); });
+        docsDe(r).forEach(function (d) { ((r.docs[d.id] || {}).archivos || []).forEach(function (a) { lista.push(a); }); });
         if (r.lab.resultadoArchivo) lista.push(r.lab.resultadoArchivo);
         ((r.rrhh || {}).cv || []).concat((r.rrhh || {}).reportes || []).forEach(function (a) { lista.push(a); });
         for (var i = 0; i < lista.length; i++) { prog.textContent = 'Descargando ' + (i + 1) + ' de ' + lista.length + '…'; var f = await call('admin.archivo', { fileId: lista[i].fileId }); zip.file(lista[i].nombre, b64aBytes(f.b64)); }

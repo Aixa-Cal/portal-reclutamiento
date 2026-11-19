@@ -41,6 +41,10 @@ var API = (function () {
       var rec = porToken(db, r.token), a = rec.lab.referimientoArchivo; if (!a) throw new Error('Su referimiento todavía no está listo.');
       var f = await fget(a.fileId); return { nombre: 'Referimiento - ' + rec.nombre + '.' + ext(a.nombre, f.mime), mime: f.mime, b64: f.b64 };
     },
+    'cand.cartaBanco': async function (db, r) {
+      var rec = porToken(db, r.token), a = rec.cartaBancoArchivo; if (!a) throw new Error('Su carta todavía no está lista.');
+      var f = await fget(a.fileId); return { nombre: 'Carta ' + bancoDeTienda(rec.cliente, rec.tienda) + ' - ' + rec.nombre + '.' + ext(a.nombre, f.mime), mime: f.mime, b64: f.b64 };
+    },
     'cand.evaluacion': async function (db, r) { var rec = porToken(db, r.token); aplicarEvaluacion(rec, r.accion); guardar(db); return vistaCandidato(rec); },
     'cand.datos': async function (db, r) { var rec = porToken(db, r.token); aplicarDatos(rec, r.doc, r.datos || {}); guardar(db); return vistaCandidato(rec); },
     'cand.enviar': async function (db, r) { var rec = porToken(db, r.token); enviarExpediente(rec); guardar(db); return vistaCandidato(rec); },
@@ -57,7 +61,9 @@ var API = (function () {
     },
     'admin.quitarRRHH': async function (db, r) { var rec = porId(db, r.id); quitarRRHH(rec, r.tipo, r.fileId); guardar(db); return rec; },
     'admin.subirLab': async function (db, r) {
-      var rec = porId(db, r.id), campo = r.campo === 'resultado' ? 'resultadoArchivo' : 'referimientoArchivo';
+      var rec = porId(db, r.id);
+      if (r.campo === 'cartaBanco') { rec.cartaBancoArchivo = await guardarArch(rec, 'Carta ' + bancoDeTienda(rec.cliente, rec.tienda) + '.' + ext(r.archivo.nombre, r.archivo.mime), r.archivo); registrar(rec, 'Admin subió la carta bancaria'); guardar(db); return rec; }
+      var campo = r.campo === 'resultado' ? 'resultadoArchivo' : 'referimientoArchivo';
       rec.lab[campo] = await guardarArch(rec, (campo === 'resultadoArchivo' ? '09 - Resultado evaluación pre empleo' : 'Referimiento laboratorio') + '.' + ext(r.archivo.nombre, r.archivo.mime), r.archivo);
       if (campo === 'referimientoArchivo' && !rec.lab.referimiento) { rec.lab.referimiento = true; rec.lab.referimientoEn = ahoraISO(); }
       registrar(rec, 'Admin subió ' + (campo === 'resultadoArchivo' ? 'resultado de laboratorio' : 'referimiento de laboratorio'));

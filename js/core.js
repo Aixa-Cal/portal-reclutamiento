@@ -33,8 +33,38 @@ var CLIENTES = {
     firma: 'digital', // formulario en línea con firma y aceptación digital
     plantillas: {},
     vacante: { posicion: '', salario: '', contratoMeses: 6 }
+  },
+  labarra: {
+    id: 'labarra',
+    nombre: 'La Barra',
+    razon: 'Inversiones BA AR, S.R.L.',
+    directo: true, // contratación directa (no subcontratación)
+    marca: { nombre: 'La Barra', razon: 'Inversiones BA AR, S.R.L.', logo: 'LB', firmaRRHH: 'RRHH – La Barra (Inversiones BA AR, S.R.L.)' },
+    colores: { pri: '#C91017', osc: '#981017', suave: '#FFF0F0' },
+    firma: 'digital',
+    formDeclaracion: 'labarra',
+    plantillas: {},
+    docs: ['datos', 'cedula', 'foto', 'estudios', 'conducta', 'ars', 'banco', 'declaracion', 'referencia', 'laboratorio', 'induccion'],
+    orden: ['datos', 'cedula', 'referencia', 'laboratorio', 'evaluacion', 'foto', 'estudios', 'conducta', 'ars', 'banco', 'declaracion', 'induccion'],
+    ajustes: {
+      declaracion: { titulo: 'Declaración de relaciones e información personal', corto: 'Declaración' },
+      referencia: { titulo: 'Referencia laboral (último trabajo)' }
+    },
+    tiendas: ['La Barra Atala', 'La Barra Atalaya', 'La Barra Miraflores', 'Zona Presidente', 'Food Shop Miraflores', 'Car Wash Miraflores'],
+    tiendasPopular: ['Food Shop Miraflores', 'Car Wash Miraflores', 'Zona Presidente'],
+    puestos: [
+      { nombre: 'Servicio al cliente', salario: '17,701.25', propina: '5,000', propinaDespues: '5,000' },
+      { nombre: 'Sandwichero/a', salario: '17,701.25', propina: '5,000', propinaDespues: '7,500' },
+      { nombre: 'Líder de turno', salario: '17,701.25', propina: '', propinaDespues: '' }
+    ],
+    vacante: { posicion: 'Servicio al cliente', salario: '17,701.25', contratoMeses: 0 },
+    protocoloUrl: ''
   }
 };
+
+/* Empresa que contrata y firma los mensajes: La Barra (directo) o Asesores Técnicos (tercerización) */
+function empleador(clienteId) { var c = CLIENTES[clienteId]; return (c && c.marca) ? c.marca : { nombre: EMPRESA.nombre, razon: EMPRESA.razon, logo: 'ATE', firmaRRHH: EMPRESA.firmaRRHH }; }
+function bancoDeTienda(clienteId, tienda) { var c = CLIENTES[clienteId] || {}; if (!c.tiendas) return 'Banco Popular'; return (c.tiendasPopular || []).indexOf(tienda) >= 0 ? 'Banco Popular' : 'Banco BHD'; }
 
 var DOCS = [
   { id: 'foto', n: 1, titulo: 'Foto 2x2 con fondo blanco', tipo: 'archivo', max: 1, soloImagen: true,
@@ -62,17 +92,38 @@ var DOCS = [
     ayuda: 'No es obligatoria. Si la tiene, súbala: puede ser una foto de la tarjeta o una captura legible. Si la perdió, puede ver su certificado digital en la página del Gobierno con su cédula.',
     enlace: { texto: 'Ver mi certificado digital (Vacúnate RD)', url: 'https://vacunate.gob.do' },
     noAplica: 'No la tengo',
-    noAplicaMsg: 'Está bien, no es obligatoria. Puede seguir con su proceso.' }
+    noAplicaMsg: 'Está bien, no es obligatoria. Puede seguir con su proceso.' },
+  { id: 'datos', n: 12, titulo: 'Sus datos y contactos', corto: 'Datos y contactos', tipo: 'datos' },
+  { id: 'induccion', n: 13, titulo: 'Conozca La Barra (inducción)', corto: 'Inducción', tipo: 'induccion' }
 ];
+var DOCS_BASE = ['foto', 'solicitud', 'declaracion', 'cedula', 'estudios', 'conducta', 'banco', 'ars', 'laboratorio', 'referencia', 'covid'];
+
+/* Documentos de un expediente según su cliente (con número y textos propios de ese cliente y tienda) */
+function docsDe(rec) {
+  var cli = CLIENTES[rec.cliente] || {}, ids = cli.docs || DOCS_BASE;
+  return ids.map(function (id, i) {
+    var d = mezclar(docPorId(id), (cli.ajustes || {})[id] || {}); d.n = i + 1;
+    if (id === 'banco' && cli.tiendas) {
+      var b = bancoDeTienda(rec.cliente, rec.tienda);
+      d.titulo = 'Constancia de cuenta · ' + b; d.corto = 'Cuenta ' + b;
+      d.ayuda = 'Debe verse su nombre y su número de cuenta de ' + b + '. Nunca envíe PIN ni contraseñas.';
+      d.noAplica = 'No tengo cuenta en ' + b + ': necesito abrirla';
+      d.noAplicaMsg = 'Está bien. Le enviaremos aquí una carta para que abra su cuenta en ' + b + '. Cuando la abra, vuelva a este paso y suba la constancia.';
+    }
+    return d;
+  });
+}
+function docDe(rec, id) { var l = docsDe(rec); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
+function ordenDe(rec) {
+  var cli = CLIENTES[rec.cliente] || {}, ids = docsDe(rec).map(function (d) { return d.id; });
+  return (cli.orden || ORDEN_CANDIDATO).filter(function (x) { return x === 'evaluacion' ? !!(rec.evaluacion && rec.evaluacion.url) : ids.indexOf(x) >= 0; });
+}
 
 /* Orden en que el candidato ve los pasos: cédula, y luego lo que toma tiempo (referencia y laboratorio). */
 var ORDEN_CANDIDATO = ['cedula', 'referencia', 'laboratorio', 'evaluacion', 'foto', 'solicitud', 'declaracion', 'estudios', 'conducta', 'banco', 'ars', 'covid'];
 
 /* Número de paso tal como lo ve el candidato */
-function numeroPaso(rec, id) {
-  var orden = ORDEN_CANDIDATO.filter(function (x) { return x !== 'evaluacion' || (rec.evaluacion && rec.evaluacion.url); });
-  return orden.indexOf(id) + 1;
-}
+function numeroPaso(rec, id) { return ordenDe(rec).indexOf(id) + 1; }
 
 function docPorId(id) { for (var i = 0; i < DOCS.length; i++) if (DOCS[i].id === id) return DOCS[i]; return null; }
 
@@ -94,6 +145,7 @@ function nuevoCandidato(d) {
   if (!cli) throw new Error('Cliente no válido');
   if (!d.nombre) throw new Error('Falta el nombre');
   if (d.sexo !== 'F' && d.sexo !== 'M') throw new Error('Indique el sexo (uso interno)');
+  if (cli.tiendas && cli.tiendas.indexOf(d.tienda) < 0) throw new Error('Elija la tienda');
   var rec = {
     id: 'C' + Date.now().toString(36).toUpperCase() + generarToken(3).toUpperCase(),
     token: generarToken(28),
@@ -108,10 +160,13 @@ function nuevoCandidato(d) {
     telefono: String(d.telefono || '').trim(),
     correo: String(d.correo || '').trim(),
     sexo: d.sexo,
+    tienda: String(d.tienda || '').trim(),
     vacante: {
       posicion: d.posicion || cli.vacante.posicion,
       salario: d.salario || cli.vacante.salario,
-      contratoMeses: Number(d.contratoMeses || cli.vacante.contratoMeses || 6)
+      contratoMeses: cli.directo ? 0 : Number(d.contratoMeses || cli.vacante.contratoMeses || 6),
+      propina: String(d.propina || '').trim(),
+      propinaDespues: String(d.propinaDespues || '').trim()
     },
     estado: 'activo',          // activo | listo | enviado_cliente | descartado
     enviadoEn: '',             // cuando el candidato presiona "Enviar expediente"
@@ -120,6 +175,7 @@ function nuevoCandidato(d) {
            asistio: false, fechaAsistencia: '', resultado: '', resultadoArchivo: null, notas: '' },
     referencia: { verificada: false, resultado: '', fecha: '', contacto: '', comentarios: '', verificadoPor: '' },
     familiares: { declara: '', detalle: '', verificado: false, conflicto: false, notas: '' },
+    cartaBancoArchivo: null,
     evaluacion: d.evaluacionUrl ? { url: String(d.evaluacionUrl).trim(), nombre: String(d.evaluacionNombre || '').trim() } : {},
     notas: '',
     historial: []
@@ -137,10 +193,11 @@ function registrar(rec, msg) {
 
 /* ¿El candidato ya hizo su parte en este paso? */
 function pasoHecho(rec, docId) {
-  var d = rec.docs[docId], def = docPorId(docId);
+  var d = rec.docs[docId], def = docDe(rec, docId) || docPorId(docId);
   if (!d || !def) return false;
   if (d.estado === 'rechazado') return false;
   if (def.tipo === 'laboratorio') return !!rec.lab.asistio;
+  if (def.tipo === 'datos' || def.tipo === 'induccion') return !!(d.datos && d.datos.completo);
   if (def.tipo === 'referencia') { var r0 = d.datos && d.datos.refs && d.datos.refs[0]; return !!(r0 && r0.nombre && r0.telefono && r0.empresa && r0.trabajaAun); }
   if (d.datos && d.datos.noAplica) return true;
   if (def.id === 'declaracion' && !(d.datos && d.datos.familiares)) return false;
@@ -153,8 +210,9 @@ function pasoHecho(rec, docId) {
 
 function progreso(rec) {
   var h = 0;
-  DOCS.forEach(function (doc) { if (pasoHecho(rec, doc.id)) h++; });
-  return { hechos: h, total: DOCS.length, pct: Math.round(h * 100 / DOCS.length) };
+  var lista = docsDe(rec);
+  lista.forEach(function (doc) { if (pasoHecho(rec, doc.id)) h++; });
+  return { hechos: h, total: lista.length, pct: Math.round(h * 100 / lista.length) };
 }
 
 function venceEn(rec) { return new Date(new Date(rec.creado).getTime() + (EMPRESA.plazoDias + Number(rec.plazoExtraDias || 0)) * 86400000).toISOString(); }
@@ -165,15 +223,16 @@ function alertas(rec) {
   if (ref.trabajaAun === 'si') a.push({ t: 'Aún trabaja con la referencia', mal: true });
   if (rec.familiares.declara === 'si') a.push({ t: 'Familiar en la empresa', mal: true });
   if ((rec.docs.ars.datos || {}).noAplica && !t.ars) a.push({ t: 'Afiliar a ARS' });
-  if ((rec.docs.banco.datos || {}).noAplica && !t.banco) a.push({ t: 'Abrir cuenta Popular' });
+  var cliA = CLIENTES[rec.cliente] || {};
+  if ((rec.docs.banco.datos || {}).noAplica && !t.banco) a.push({ t: cliA.tiendas ? (rec.cartaBancoArchivo ? 'Cuenta ' + bancoDeTienda(rec.cliente, rec.tienda) + ' en trámite' : 'Enviar carta ' + bancoDeTienda(rec.cliente, rec.tienda)) : 'Abrir cuenta Popular' });
   return a;
 }
 
 /* Revisión de depuración: lo que debe estar OK antes de enviar al cliente */
 function depuracion(rec) {
   var docsOk = true, pendientesRevision = 0;
-  DOCS.forEach(function (doc) {
-    if (doc.tipo === 'laboratorio' || doc.tipo === 'referencia') return;
+  docsDe(rec).forEach(function (doc) {
+    if (doc.tipo === 'laboratorio' || doc.tipo === 'referencia' || doc.tipo === 'induccion' || doc.tipo === 'datos') return;
     var d = rec.docs[doc.id];
     if (d.datos && d.datos.noAplica) return;
     if (d.estado !== 'aprobado') { docsOk = false; if (d.estado === 'recibido') pendientesRevision++; }
@@ -199,21 +258,26 @@ function etapa(rec) {
 
 function resumen(rec) {
   var p = progreso(rec), dep = depuracion(rec);
-  return { id: rec.id, nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, cliente: rec.cliente,
+  return { id: rec.id, nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, cliente: rec.cliente, tienda: rec.tienda || '',
            posicion: rec.vacante.posicion, creado: rec.creado, actualizado: rec.actualizado, vence: venceEn(rec),
            enviadoEn: rec.enviadoEn, estado: rec.estado, etapa: etapa(rec), progreso: p, depuracion: dep,
            familiaresDeclara: rec.familiares.declara, alertas: alertas(rec) };
 }
 
 /* Lo único que ve el candidato (sin sexo, sin tipo de prueba, sin notas internas) */
+function asegurarDocs(rec) { DOCS.forEach(function (doc) { if (!rec.docs[doc.id]) rec.docs[doc.id] = { estado: 'pendiente', archivos: [], datos: {}, nota: '', actualizado: '' }; }); }
+
 function vistaCandidato(rec) {
-  var docs = {};
-  DOCS.forEach(function (doc) {
+  asegurarDocs(rec);
+  var docs = {}, defs = docsDe(rec), emp = empleador(rec.cliente);
+  defs.forEach(function (doc) {
     var d = rec.docs[doc.id];
     docs[doc.id] = { estado: d.estado, nota: d.estado === 'rechazado' ? d.nota : '', datos: limpiarDatosCand(d.datos),
                      archivos: (d.archivos || []).map(function (a) { return { nombre: a.nombre, lado: a.lado || '' }; }), hecho: pasoHecho(rec, doc.id) };
   });
   return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
+           tienda: rec.tienda || '', banco: bancoDeTienda(rec.cliente, rec.tienda), empleador: emp, defs: defs, orden: ordenDe(rec),
+           cartaBanco: !!rec.cartaBancoArchivo,
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
            lab: { listo: !!rec.lab.referimiento, referimiento: !!rec.lab.referimientoArchivo, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia },
            evaluacion: rec.evaluacion && rec.evaluacion.url ? { url: rec.evaluacion.url, nombre: rec.evaluacion.nombre || '', instrucciones: rec.evaluacion.instrucciones || '',
@@ -225,7 +289,8 @@ function exigirAbierto(rec) { if (rec.estado !== 'activo') throw new Error('Este
 
 function aplicarSubida(rec, docId, archivos, datos, reemplazar, porAdmin) {
   if (!porAdmin) exigirAbierto(rec);
-  var def = docPorId(docId); if (!def || def.tipo === 'laboratorio' || def.tipo === 'referencia') throw new Error('Paso no válido');
+  asegurarDocs(rec);
+  var def = docDe(rec, docId) || docPorId(docId); if (!def || ['laboratorio', 'referencia', 'datos', 'induccion'].indexOf(def.tipo) >= 0) throw new Error('Paso no válido');
   var d = rec.docs[docId];
   if (def.lados && archivos.length && archivos[0].lado) {
     var nuevos = archivos.map(function (a) { return a.lado; });
@@ -243,8 +308,33 @@ function aplicarSubida(rec, docId, archivos, datos, reemplazar, porAdmin) {
 
 function aplicarDatos(rec, docId, datos) {
   exigirAbierto(rec);
-  var def = docPorId(docId); if (!def) throw new Error('Paso no válido');
+  asegurarDocs(rec);
+  var def = docDe(rec, docId) || docPorId(docId); if (!def) throw new Error('Paso no válido');
   var d = rec.docs[docId];
+  if (def.tipo === 'datos') {
+    var x = datos || {}, falta = [];
+    [['nacimiento', 'fecha de nacimiento'], ['correo', 'correo'], ['direccion', 'dirección'], ['emergenciaNombre', 'contacto de emergencia'], ['emergenciaTelefono', 'teléfono de emergencia']].forEach(function (c) { if (!String(x[c[0]] || '').trim()) falta.push(c[1]); });
+    if (x.salud !== 'si' && x.salud !== 'no') falta.push('si padece alguna enfermedad');
+    if (x.salud === 'si' && !String(x.saludDetalle || '').trim()) falta.push('cuál enfermedad');
+    if (!x.consentimiento) falta.push('la autorización de uso de datos');
+    if (falta.length) throw new Error('Complete: ' + falta.join(', '));
+    d.datos = mezclar(x, { completo: true, guardadoEn: ahoraISO() }); d.estado = 'recibido'; d.actualizado = ahoraISO();
+    if (x.correo && !rec.correo) rec.correo = String(x.correo).trim();
+    registrar(rec, 'Candidato completó sus datos y contactos');
+    return;
+  }
+  if (def.tipo === 'induccion') {
+    var di = d.datos || {}; di.leidos = di.leidos || [];
+    if (datos.modulo && di.leidos.indexOf(datos.modulo) < 0) di.leidos.push(datos.modulo);
+    if (datos.quiz) { di.quiz = { respuestas: datos.quiz.respuestas || {}, correctas: Number(datos.quiz.correctas || 0), total: Number(datos.quiz.total || 0), en: ahoraISO() }; registrar(rec, 'Candidato respondió el cuestionario de inducción: ' + di.quiz.correctas + '/' + di.quiz.total); }
+    if (datos.protocolo) di.protocolo = ahoraISO();
+    var modTotal = Number(datos.modulosTotal || di.modulosTotal || 0); if (modTotal) di.modulosTotal = modTotal;
+    var listo = di.modulosTotal && di.leidos.length >= di.modulosTotal && di.quiz && (!datos.requiereProtocolo && !di.requiereProtocolo || di.protocolo);
+    if (datos.requiereProtocolo) di.requiereProtocolo = true;
+    if (listo && !di.completo) { di.completo = true; registrar(rec, 'Candidato completó la inducción'); }
+    d.datos = di; d.actualizado = ahoraISO(); rec.actualizado = ahoraISO();
+    return;
+  }
   if (def.tipo === 'laboratorio') {
     if (!rec.lab.referimiento) throw new Error('Su evaluación todavía no está lista. Le avisaremos.');
     rec.lab.asistio = true; rec.lab.fechaAsistencia = datos.fecha || ahoraISO().slice(0, 10);
@@ -299,18 +389,17 @@ function nombreRRHH(rec, tipo, idx, ext) {
 
 function enviarExpediente(rec) {
   exigirAbierto(rec);
-  var faltan = DOCS.filter(function (doc) { return doc.tipo !== 'laboratorio' && !pasoHecho(rec, doc.id); });
+  var faltan = docsDe(rec).filter(function (doc) { return doc.tipo !== 'laboratorio' && doc.tipo !== 'induccion' && !pasoHecho(rec, doc.id); });
   if (faltan.length) throw new Error('Le falta completar: ' + faltan.map(function (f) { return f.n + '. ' + (f.corto || f.titulo); }).join(', '));
   rec.enviadoEn = ahoraISO();
   registrar(rec, 'Candidato envió su expediente: "Documentos enviados completos"');
 }
 
-/* Cambios del administrador: rutas permitidas */
 var ASPECTOS_REF = ['Puntualidad', 'Responsabilidad', 'Calidad del trabajo', 'Comportamiento', 'Trabajo en equipo', 'Confiabilidad', 'Servicio / trato al cliente', 'Iniciativa'];
 var NIVELES_REF = ['Excelente', 'Muy bueno', 'Bueno', 'Aceptable', 'Deficiente'];
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var RUTAS_ADMIN = /^(tienda|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;
@@ -323,7 +412,8 @@ function adminCambiar(rec, ruta, valor) {
 }
 
 function adminDocEstado(rec, docId, estado, nota) {
-  var def = docPorId(docId); if (!def) throw new Error('Documento no válido');
+  asegurarDocs(rec);
+  var def = docDe(rec, docId) || docPorId(docId); if (!def) throw new Error('Documento no válido');
   if (['pendiente', 'recibido', 'aprobado', 'rechazado'].indexOf(estado) < 0) throw new Error('Estado no válido');
   var d = rec.docs[docId]; d.estado = estado; d.nota = nota || ''; d.actualizado = ahoraISO();
   if (estado === 'rechazado' && rec.enviadoEn) rec.enviadoEn = ''; // vuelve al candidato
@@ -333,13 +423,13 @@ function adminDocEstado(rec, docId, estado, nota) {
 function mezclar(a, b) { var o = {}, k; for (k in a) o[k] = a[k]; for (k in b) o[k] = b[k]; return o; }
 
 function nombreArchivo(rec, docId, idx, ext, lado) {
-  var def = docPorId(docId), n = def ? (def.n < 10 ? '0' + def.n : def.n) : '00';
+  var def = docDe(rec, docId) || docPorId(docId), n = def ? (def.n < 10 ? '0' + def.n : def.n) : '00';
   return n + ' - ' + (def ? (def.corto || def.titulo) : docId) + (lado ? ' - ' + lado : (idx > 0 ? ' (' + (idx + 1) + ')' : '')) + (ext ? '.' + ext : '');
 }
 
 /* Para documentos de dos lados (cédula, carnet ARS): asigna Frente / Parte de atrás si no viene indicado */
 function asignarLados(rec, docId, archivos) {
-  var def = docPorId(docId); if (!def || !def.lados) return archivos;
+  var def = docDe(rec, docId) || docPorId(docId); if (!def || !def.lados) return archivos;
   var usados = (rec.docs[docId].archivos || []).map(function (a) { return a.lado; });
   return (archivos || []).map(function (f) {
     if (!f.lado || def.lados.indexOf(f.lado) < 0) { f.lado = def.lados.filter(function (l) { return usados.indexOf(l) < 0; })[0] || def.lados[def.lados.length - 1]; }

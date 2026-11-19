@@ -7,12 +7,12 @@ function limpiarTxt(s) {
 }
 
 function hexRgb(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255]; }
-async function nuevoLienzo(colorHex) {
+async function nuevoLienzo(colorHex, marcaNombre) {
   var L = PDFLib, doc = await L.PDFDocument.create();
   var f = await doc.embedFont(L.StandardFonts.Helvetica), fb = await doc.embedFont(L.StandardFonts.HelveticaBold);
   var W = 595.28, H = 841.89, M = 46;
   var AC = hexRgb(colorHex || EMPRESA.colores.pri);
-  var z = { doc: doc, f: f, fb: fb, W: W, H: H, M: M, page: null, y: 0, pie: '', acento: AC };
+  var z = { doc: doc, f: f, fb: fb, W: W, H: H, M: M, page: null, y: 0, pie: '', acento: AC, marca: marcaNombre || EMPRESA.nombre };
   function rgb(c) { return L.rgb(c[0], c[1], c[2]); }
   z.rgb = rgb;
   z.pagina = function () {
@@ -42,7 +42,7 @@ async function nuevoLienzo(colorHex) {
   z.encabezado = function (titulo, sub) {
     z.pagina();
     z.page.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: rgb(AC) });
-    z.page.drawText(limpiarTxt(EMPRESA.nombre.toUpperCase()), { x: M, y: H - 36, size: 8, font: fb, color: rgb(AC) });
+    z.page.drawText(limpiarTxt(z.marca.toUpperCase()), { x: M, y: H - 36, size: 8, font: fb, color: rgb(AC) });
     z.y = H - 50;
     z.texto(titulo, { size: 16, bold: true });
     if (sub) z.texto(sub, { size: 9, color: GRIS });
@@ -158,6 +158,24 @@ async function pdfDeclaracion(d, cli, firma, meta) {
   return await z.doc.save();
 }
 
+/* ---------- La Barra: declaración digital ---------- */
+async function pdfDeclaracionLB(d, cli, firma, meta) {
+  var emp = cli.marca || {};
+  var z = await nuevoLienzo(cli.colores.pri, emp.nombre); z.pie = 'Declaración · ' + d.nombre + ' · ' + (emp.razon || cli.razon) + ' · Código ' + meta.codigo;
+  z.encabezado('Declaración de relaciones e información personal', (emp.razon || cli.razon) + ' · Fecha: ' + fechaCorta(meta.fecha));
+  z.campos([['Nombre', d.nombre], ['Cédula', d.cedula]], 2);
+  z.seccion('1. ¿Tiene familiares trabajando en ' + (emp.nombre || cli.nombre) + '?'); z.respuesta(siNo(d.p2));
+  if (d.p2 === 'si') z.tabla(['Nombre', 'Parentesco', 'Cédula', 'Tienda o área'], (d.p2filas || []).map(function (r) { return [r.nombre, r.relacion, r.cedula, r.entidad]; }), [0.32, 0.2, 0.22, 0.26]);
+  z.seccion('2. ¿Trabaja en otro lugar o tiene otra actividad o negocio?'); z.respuesta(siNo(d.p3));
+  if (d.p3 === 'si') z.tabla(['Empresa o actividad', 'Su relación', 'Su cargo'], (d.p3filas || []).map(function (r) { return [r.entidad, r.relacion, r.cargo]; }), [0.4, 0.3, 0.3]);
+  z.seccion('3. ¿Tiene antecedentes o procesos judiciales relevantes?'); z.respuesta(siNo(d.p4));
+  if (d.p4 === 'si') z.texto(d.p4detalle || '', { size: 9.5 });
+  z.seccion('Declaración');
+  z.texto('Certifico que la información es completa y verídica. Me comprometo a informar a Recursos Humanos cualquier cambio.', { size: 9 });
+  await z.firma(firma, d.nombre, d.cedula, fechaLarga(meta.fecha), 'Aceptación: marcó "Certifico que la información es completa y verídica". Dispositivo: ' + meta.dispositivo + '. Código ' + meta.codigo + '.');
+  return await z.doc.save();
+}
+
 /* ---------- Solicitud de referencias laborales ---------- */
 function dibujarReferencia(z, rec) {
   var F = rec.referencia.formulario, refs = ((rec.docs.referencia.datos || {}).refs || []);
@@ -175,21 +193,23 @@ function dibujarReferencia(z, rec) {
   z.campos([['Comentarios adicionales', F.comentarios]], 1);
   z.seccion('Validación');
   z.campos([['Datos suministrados por', F.suministrado], ['Posición', F.suministradoPos], ['Fecha', F.fecha], ['Resultado', { positiva: 'Positiva', negativa: 'Negativa', no_localizable: 'No localizable' }[rec.referencia.resultado] || ''],
-    ['Verificado por', (F.verificadoPor || '') + ' – ' + EMPRESA.firmaRRHH], ['Medio', 'Llamada telefónica']], 3);
+    ['Verificado por', (F.verificadoPor || '') + ' – ' + empleador(rec.cliente).firmaRRHH], ['Medio', 'Llamada telefónica']], 3);
 }
 async function pdfReferencia(rec) {
-  var z = await nuevoLienzo(CLIENTES[rec.cliente].colores.pri); z.pie = 'Referencia laboral · ' + rec.nombre + ' · ' + EMPRESA.razon;
+  var z = await nuevoLienzo(CLIENTES[rec.cliente].colores.pri, empleador(rec.cliente).nombre); z.pie = 'Referencia laboral · ' + rec.nombre + ' · ' + empleador(rec.cliente).razon;
   dibujarReferencia(z, rec); return await z.doc.save();
 }
 
 /* ---------- Expediente completo para el cliente ---------- */
 async function pdfExpediente(rec, traerArchivo, progresoCb) {
-  var L = PDFLib, cli = CLIENTES[rec.cliente], dep = depuracion(rec);
-  var z = await nuevoLienzo(cli.colores.pri); z.pie = 'Expediente · ' + rec.nombre + ' · ' + cli.nombre + ' · ' + EMPRESA.razon;
-  z.encabezado('Expediente del candidato', cli.razon + ' · Subcontratación a través de ' + EMPRESA.razon);
+  var L = PDFLib, cli = CLIENTES[rec.cliente], dep = depuracion(rec), E = empleador(rec.cliente);
+  var z = await nuevoLienzo(cli.colores.pri, E.nombre); z.pie = 'Expediente · ' + rec.nombre + ' · ' + cli.nombre + ' · ' + E.razon;
+  z.encabezado(cli.directo ? 'Expediente de ingreso' : 'Expediente del candidato', cli.directo ? E.razon + (rec.tienda ? ' · ' + rec.tienda : '') : cli.razon + ' · Subcontratación a través de ' + EMPRESA.razon);
   z.seccion('Candidato');
-  z.campos([['Nombre', rec.nombre], ['Cédula', rec.cedula], ['Teléfono', rec.telefono], ['Correo', rec.correo], ['Posición', rec.vacante.posicion],
-    ['Salario mensual', rec.vacante.salario ? 'RD$' + rec.vacante.salario : ''], ['Contrato', rec.vacante.contratoMeses + ' meses'], ['Fecha del expediente', fechaCorta(ahoraISO())]], 2);
+  var dd = (rec.docs.datos && rec.docs.datos.datos) || {};
+  z.campos([['Nombre', rec.nombre], ['Cédula', rec.cedula], ['Teléfono', rec.telefono], ['Correo', dd.correo || rec.correo], ['Posición', rec.vacante.posicion],
+    ['Salario mensual', rec.vacante.salario ? 'RD$' + rec.vacante.salario : ''], cli.directo ? ['Tienda', rec.tienda] : ['Contrato', rec.vacante.contratoMeses + ' meses'], ['Fecha del expediente', fechaCorta(ahoraISO())]], 2);
+  if (dd.completo) z.campos([['Fecha de nacimiento', dd.nacimiento], ['Dirección', dd.direccion], ['Contacto de emergencia', dd.emergenciaNombre + (dd.emergenciaParentesco ? ' (' + dd.emergenciaParentesco + ')' : '') + ' · ' + dd.emergenciaTelefono], ['Talla', dd.talla]], 2);
   z.seccion('Depuración');
   function est(v) { return v === 'ok' ? 'Completado' : v === 'mal' ? 'Con observación' : 'Pendiente'; }
   var ref0 = ((rec.docs.referencia.datos || {}).refs || [])[0] || {};
@@ -202,8 +222,8 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   z.seccion('Contenido');
   var lista = [], rr = rec.rrhh || {};
   if ((rr.cv || []).length) lista.push({ n: '—', t: TIPOS_RRHH.cv.titulo, archivos: rr.cv });
-  DOCS.forEach(function (doc) {
-    var d = rec.docs[doc.id];
+  docsDe(rec).forEach(function (doc) {
+    var d = rec.docs[doc.id]; if (!d || doc.tipo === 'datos' || doc.tipo === 'induccion') return;
     if (doc.tipo === 'laboratorio') { if (rec.lab.resultadoArchivo) lista.push({ n: doc.n, t: doc.titulo + ' (resultado)', archivos: [rec.lab.resultadoArchivo] }); else lista.push({ n: doc.n, t: doc.titulo, nota: rec.lab.resultado === 'apto' ? 'Apto – resultado recibido del laboratorio' : 'Pendiente' }); return; }
     if (doc.tipo === 'referencia') { lista.push({ n: doc.n, t: doc.titulo, pagina: true }); return; }
     if (d.datos && d.datos.noAplica) { lista.push({ n: doc.n, t: doc.titulo, nota: 'No aplica – ' + doc.noAplica }); return; }
@@ -211,7 +231,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   });
   if ((rr.reportes || []).length) lista.push({ n: '—', t: TIPOS_RRHH.reportes.titulo, archivos: rr.reportes });
   z.tabla(['#', 'Documento', 'Observación'], lista.map(function (x) { return [String(x.n), x.t, x.nota || (x.archivos && x.archivos.length ? x.archivos.length + ' archivo(s)' : x.pagina ? 'Incluido' : 'Falta')]; }), [0.06, 0.6, 0.34]);
-  z.y -= 8; z.texto('Preparado por ' + EMPRESA.firmaRRHH, { size: 8.5, color: GRIS });
+  z.y -= 8; z.texto('Preparado por ' + E.firmaRRHH, { size: 8.5, color: GRIS });
 
   var total = lista.reduce(function (s, x) { return s + (x.archivos ? x.archivos.length : 0); }, 0), hechos = 0;
   for (var i = 0; i < lista.length; i++) {

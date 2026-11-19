@@ -133,3 +133,41 @@ function activarSiNo(root) {
     $$('[data-si]', root).forEach(function (d) { var r = $('input[name="' + d.getAttribute('data-si') + '"]:checked', root); d.classList.toggle('hidden', !(r && r.value === 'si')); });
   });
 }
+
+/* ---------- La Barra: datos y contactos ---------- */
+function htmlDatos(V, x) {
+  x = x || {};
+  var emp = V.empleador || {};
+  function v(k) { return esc(x[k] || ''); }
+  return '<form data-form="datos">' +
+    '<fieldset><legend>Sus datos</legend><div class="grid g2">' +
+    '<div class="campo"><label>Fecha de nacimiento *</label><input type="date" name="nacimiento" value="' + v('nacimiento') + '"></div>' +
+    '<div class="campo"><label>Correo electrónico *</label><input type="email" name="correo" value="' + esc(x.correo || V.correo || '') + '"></div></div>' +
+    '<div class="campo"><label>Dirección donde vive *</label><input name="direccion" placeholder="Calle, número, sector" value="' + v('direccion') + '"></div>' +
+    '<div class="campo" style="max-width:220px"><label>Talla de camiseta</label><select name="talla"><option value=""></option>' + ['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(function (t) { return '<option' + (x.talla === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div></fieldset>' +
+    '<fieldset><legend>Contacto de emergencia</legend><div class="grid g3">' +
+    '<div class="campo"><label>Nombre *</label><input name="emergenciaNombre" value="' + v('emergenciaNombre') + '"></div>' +
+    '<div class="campo"><label>Parentesco</label><input name="emergenciaParentesco" placeholder="Ej.: madre" value="' + v('emergenciaParentesco') + '"></div>' +
+    '<div class="campo"><label>Teléfono *</label><input type="tel" name="emergenciaTelefono" value="' + v('emergenciaTelefono') + '"></div></div></fieldset>' +
+    '<fieldset><legend>Salud (confidencial)</legend><div class="campo"><label>¿Padece alguna enfermedad que debamos conocer para cuidarle en el trabajo? *</label><div class="radios" data-radio="salud">' +
+    '<label><input type="radio" name="salud" value="no"' + (x.salud === 'no' ? ' checked' : '') + '> No</label><label><input type="radio" name="salud" value="si"' + (x.salud === 'si' ? ' checked' : '') + '> Sí</label></div></div>' +
+    '<div class="campo' + (x.salud === 'si' ? '' : ' hidden') + '" data-si="salud"><label>¿Cuál? *</label><textarea name="saludDetalle" rows="2">' + v('saludDetalle') + '</textarea></div>' +
+    '<p class="tiny muted">Esta respuesta solo la ve Recursos Humanos.</p></fieldset>' +
+    '<label class="check"><input type="checkbox" name="consentimiento"' + (x.consentimiento ? ' checked' : '') + '> Autorizo a ' + esc(emp.nombre || '') + ' (' + esc(emp.razon || '') + ') a usar mis datos solo para mi proceso de ingreso y mi expediente laboral.</label>' +
+    '<button type="button" class="btn pri block lg" data-guardardatos style="margin-top:12px">Guardar mis datos</button></form>';
+}
+
+/* ---------- La Barra: declaración (3 preguntas) ---------- */
+function htmlDeclaracionLB(cli, nombre) {
+  var emp = cli.marca || {};
+  return '<form data-form="declaracion">' +
+    '<div class="grid g2">' + inp('nombre', 'Su nombre completo', { req: 1, val: nombre }) + inp('cedula', 'Su cédula', { req: 1 }) + '</div>' +
+    '<fieldset><legend>1. Familiares en la empresa</legend>' + radioSN('p2', '¿Tiene familiares trabajando en ' + (emp.nombre || cli.nombre) + ' (' + (emp.razon || cli.razon) + ')?', true) +
+    '<div data-si="p2" class="hidden">' + repetible('p2filas', [{ k: 'nombre', label: 'Nombre' }, { k: 'relacion', label: 'Parentesco' }, { k: 'cedula', label: 'Cédula' }, { k: 'entidad', label: 'Tienda o área' }], { item: 'familiar' }) + '</div></fieldset>' +
+    '<fieldset><legend>2. Otras actividades</legend>' + radioSN('p3', '¿Trabaja en otro lugar o tiene otra actividad profesional o negocio propio?', true) +
+    '<div data-si="p3" class="hidden">' + repetible('p3filas', [{ k: 'entidad', label: 'Empresa o actividad' }, { k: 'relacion', label: 'Su relación' }, { k: 'cargo', label: 'Su cargo' }], { item: 'actividad' }) + '</div></fieldset>' +
+    '<fieldset><legend>3. Antecedentes</legend>' + radioSN('p4', '¿Tiene antecedentes o procesos judiciales relevantes?', true) +
+    '<div data-si="p4" class="hidden"><div class="campo"><label>Describa brevemente el hecho, las fechas y el estado actual</label><textarea name="p4detalle" rows="3"></textarea></div></div></fieldset>' +
+    '<fieldset><legend>Declaración y firma</legend><label class="check"><input type="checkbox" name="acepto"> Certifico que la información es completa y verídica, y me comprometo a informar a Recursos Humanos cualquier cambio.</label>' +
+    '<div style="height:10px"></div><div class="firma-box"></div></fieldset></form>';
+}
