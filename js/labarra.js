@@ -22,39 +22,67 @@ function modulosLaBarra(V) {
       'Lávese las manos; siga las recetas y medidas; mantenga su área limpia; revise condiciones y vencimientos. No cambie ingredientes ni porciones por cuenta propia.',
       'Informe daños, faltantes, desperdicios y riesgos. Si presenta síntomas que puedan afectar la manipulación de alimentos, avise antes de trabajar.',
       'Pida entrenamiento antes de usar equipos que no conoce. Su líder debe mostrarle salidas, punto de encuentro, botiquín y equipos de emergencia.'] };
+  var sandw = /sandwich/i.test(vac.posicion || '');
   return [
-    { id: 'bienvenida', titulo: 'Bienvenido/a a La Barra', sub: 'Su equipo y sus primeros pasos', p: [
-      'Somos Inversiones BA AR, S.R.L. Nuestro compromiso es la calidad, la higiene y el buen servicio.',
-      'Su líder le explicará sus funciones y le acompañará durante el entrenamiento. Pregunte antes de realizar una tarea que no conoce.',
-      'Confirme con Administración su sucursal, fecha de ingreso, horario y persona que le recibirá.'] },
+    { id: 'bienvenida', titulo: '¡Bienvenido/a al equipo de La Barra!', sub: 'Le deseamos mucho éxito en esta nueva etapa', p: [
+      'Aquí encontrará la información que necesita para su ingreso y para conocer nuestros procedimientos.',
+      'Al ingresar, se le informará su posición, sucursal, horario y salario. A su salario se le aplicarán los descuentos de ley.',
+      'Su supervisor le explicará sus funciones y le acompañará durante su entrenamiento. Si tiene alguna duda, pregunte antes de realizar una tarea.'] },
     pago,
-    { id: 'banco', titulo: 'Su banco y su seguro médico', sub: 'Lo necesario para su registro', p: [
-      'En ' + t + ', la nómina se paga por ' + banco + '. Si no tiene cuenta allí, márquelo en el paso del banco. Administración le enviará una carta por este portal.',
-      'Después de abrir su cuenta, suba una constancia con su nombre y número. Nunca comparta PIN, contraseñas ni códigos.',
-      'Informe su ARS. Si no tiene, indíquelo para que Administración le oriente. La cobertura efectiva debe confirmarla Administración.'] },
-    { id: 'uniforme', titulo: 'Uniforme, higiene y asistencia', sub: 'Prepárese para cada turno', p: [
-      'Use gorra y camiseta del uniforme limpias, pantalón jean o negro y calzado autorizado. No se permiten chancletas.',
-      'Llegue puntual y registre entrada y salida. Si el sistema falla o se le olvida registrar, avise a su líder ese mismo día.',
-      'Solicite permisos con anticipación. No cambie turnos ni días libres sin autorización. Ante una emergencia, avise lo antes posible. Evite el uso del celular durante sus labores.'] },
-    seguridad,
-    { id: 'servicio', titulo: 'Atención al cliente', sub: 'Un mismo estándar en cada visita', p: [
-      'Salude, dé la bienvenida e identifíquese. Escuche con atención, confirme si el pedido es para consumir o para llevar y anote las preferencias.',
-      'Repita el pedido, informe el tiempo estimado y mantenga al cliente al tanto de retrasos. Verifique la orden antes de entregarla y mantenga el área limpia.',
-      'Trate con respeto a clientes y compañeros. Ante una queja que no pueda resolver, pida apoyo a su líder. Los precios y tiempos deben confirmarse con su líder.'] },
-    { id: 'tramites', titulo: 'Solicitudes y comunicación', sub: 'A quién acudir', p: [
-      'Su primer contacto es su líder para funciones, horarios, permisos y novedades. Administración / RR. HH. y nómina: 829-470-8263. Si la situación involucra a su líder, comuníquela directamente a Administración.',
-      'Avances: mínimo seis meses; solicite el formulario a su supervisor, complételo, fírmelo y entréguelo para trámite. La empresa no realiza préstamos.',
-      'Vacaciones: coordine con su líder y Administración; la guía contempla 14 días al cumplir el primer año. Licencia médica: avise y envíe el certificado.',
-      'Registre horas extras y feriados y confirme su reporte. Para renunciar, entregue carta firmada con nombre, cédula y fecha de salida.'] }
-  ];
+    { id: 'normas', titulo: 'Presentación y normas de trabajo', sub: 'Prepárese para cada turno', p: [
+      'Preséntese puntualmente, con su uniforme completo, limpio y en buenas condiciones.',
+      'Mantenga una buena higiene personal y su área de trabajo limpia y organizada.',
+      'Cumpla las recetas, medidas y procedimientos que se le enseñen.',
+      'Trate con respeto a los clientes y a sus compañeros.',
+      'Informe a su supervisor cualquier faltante, daño de equipos o situación que afecte el servicio.',
+      'Registre correctamente su entrada y salida en el sistema de asistencia.'] },
+    { id: 'servicio', titulo: 'Cómo atendemos al cliente', sub: 'El mismo estándar en cada visita', p: [
+      'El saludo es ley. A cada cliente se le dice: "¡Bienvenido a La Barra!".',
+      'El orden es siempre el mismo: 1) se toma la orden, 2) se confirma (repítala al cliente), 3) se cobra y 4) se entrega la orden.',
+      'Si no puede recordar todo el pedido, anótelo. Es mejor anotar que equivocarse.',
+      'Antes de entregar, revise que la orden sea igual a lo que pidió el cliente.'] },
+    { id: 'inocuidad', titulo: 'Higiene, inocuidad y temperaturas', sub: 'Esto aplica para todos', p: [
+      'Lávese las manos al llegar, después de ir al baño, de tocar dinero o basura, y cada vez que cambie de tarea.',
+      'Respete las temperaturas: lo frío se mantiene frío y lo caliente se mantiene caliente. Revise las neveras y avise si algo no está a la temperatura correcta.',
+      'No mezcle alimentos crudos con cocidos. Revise fechas de vencimiento y no use nada que esté en mal estado.',
+      'Si tiene síntomas que puedan afectar los alimentos, avise a su supervisor antes de trabajar.'] }
+  ].concat(sandw ? [
+    { id: 'sandwichero', titulo: 'Para sandwicheros', sub: 'Su puesto es especializado', p: [
+      'Cada sándwich tiene su receta, su pan, sus porciones y su orden de armado. Apréndalos con su supervisor y respételos siempre.',
+      'Use las medidas exactas. No cambie ingredientes ni porciones por su cuenta.',
+      'Cuide las temperaturas de las carnes, quesos y salsas, y la limpieza de la plancha y los utensilios.',
+      'Fíjese en los detalles del pedido: tipo de pan, queso danés o cheddar, con o sin vegetales.'] }] : []).concat([
+    { id: 'comunicacion', titulo: 'Canal de comunicación', sub: 'A quién acudir', p: [
+      'Su supervisor es su primer contacto para el trabajo diario: horarios, permisos, ausencias, funciones y novedades de la sucursal.',
+      'Para Recursos Humanos y nómina, escriba a Administración al 829-470-8263. Indique su nombre completo, sucursal y el motivo de su consulta.'] },
+    { id: 'banco', titulo: 'Cuenta bancaria y pagos', sub: 'Lo necesario para cobrar', p: [
+      'En ' + t + ', la nómina se paga por ' + banco + '. Si necesita abrir una cuenta, márquelo en el paso del banco y le enviaremos la carta de nómina por este portal.',
+      'Cuando tenga su número de cuenta, súbalo en ese paso para completar el registro. Nunca comparta su PIN, contraseñas ni códigos.',
+      'Administración le informará las fechas de pago y cómo consultar su comprobante de nómina.'] },
+    { id: 'avances', titulo: 'Avances de propina o salario', sub: 'Mínimo seis meses en la empresa', p: [
+      '1. Pida a su supervisor el formulario de avance de propina o salario.',
+      '2. Complételo y entréguelo a su supervisor para que lo envíe a Administración.',
+      '3. Cuando Administración lo reciba, se tramita el avance.',
+      'La solicitud se hace solo con el formulario. La empresa no realiza préstamos.'] },
+    { id: 'permisos', titulo: 'Permisos, ausencias y otros trámites', sub: 'Siempre con anticipación', p: [
+      'Permisos: pídalos a su supervisor con anticipación. Si una emergencia le impide llegar, avísele lo antes posible.',
+      'Licencia médica: informe a su supervisor y envíe el certificado a Administración.',
+      'Constancias laborales: pídalas a Administración con anticipación e indique para qué las necesita.',
+      'Vacaciones: coordínelas con su supervisor y Administración. Espere la confirmación antes de organizar su ausencia.',
+      'Horas extras y feriados: deben quedar registrados y su supervisor los reporta a Administración.',
+      'Maternidad: comuníquese con Administración para recibir orientación.',
+      'Renuncia: entregue una carta firmada con su nombre, cédula y fecha de salida a su supervisor y a Administración.',
+      '¡Contamos con su compromiso con la calidad, la higiene y el buen servicio de La Barra!'] }
+  ]);
 }
 
 var QUIZ_LB = [
-  { id: 'club', q: '¿En qué pan se prepara el Barra Club?', o: ['Pan brioche', 'Tres lonjas de pan cuadrado', 'Pan de agua'], c: 1, e: 'El Barra Club se prepara entre tres lonjas de pan cuadrado.' },
+  { id: 'saludo', q: '¿Cuál es el saludo de La Barra?', o: ['"Hola, ¿qué quiere?"', '"¡Bienvenido a La Barra!"', '"Siguiente"'], c: 1, e: 'El saludo es ley: a cada cliente se le dice "¡Bienvenido a La Barra!".' },
+  { id: 'orden', q: '¿Cuál es el orden correcto para atender un pedido?', o: ['Cobrar, tomar la orden y entregar', 'Tomar la orden, entregar y cobrar', 'Tomar la orden, confirmarla, cobrar y entregar'], c: 2, e: 'Primero se toma la orden, se confirma, se cobra y luego se entrega.' },
+  { id: 'anotar', q: 'Si no puede recordar todo el pedido, ¿qué debe hacer?', o: ['Anotarlo', 'Adivinar lo que falta', 'Preparar lo que recuerde'], c: 0, e: 'Si no puede retener el pedido, anótelo. Es mejor anotar que equivocarse.' },
+  { id: 'temp', q: '¿Qué hace si una nevera no está a la temperatura correcta?', o: ['Nada, no es su trabajo', 'Avisar a su supervisor', 'Seguir usando los alimentos'], c: 1, e: 'Las temperaturas son responsabilidad de todos. Avise de inmediato a su supervisor.' },
+  { id: 'club', q: '¿En qué pan se prepara el Barra Club?', o: ['Pan brioche', 'Tres lonjas de pan cuadrado', 'Pan de agua'], c: 1, e: 'El Barra Club se prepara en tres lonjas de pan cuadrado.' },
   { id: 'cubana', q: '¿Cuál de estos ingredientes lleva La Barra Cubana?', o: ['Pepinillos', 'Piña', 'Salsa BBQ'], c: 0, e: 'La Barra Cubana lleva pierna, queso danés, jamón, pepinillos, mayonesa y mostaza.' },
-  { id: 'alitas', q: '¿Cuál de estas salsas puede elegir para las alitas?', o: ['Salsa de chocolate', 'Salsa de fresa', 'Honey Mustard'], c: 2, e: 'Las salsas de alitas del menú son Honey Mustard, Búfalo y BBQ.' },
-  { id: 'familiar', q: '¿Cuántas porciones tiene el Club Familiar?', o: ['4 porciones', '8 porciones', '12 porciones'], c: 1, e: 'El Club Familiar del menú tiene 8 porciones.' },
-  { id: 'pedido', q: 'Antes de entregar un pedido, ¿qué debe hacer?', o: ['Entregarlo sin revisarlo', 'Cambiar lo pedido si falta algo', 'Revisar que coincida con el pedido del cliente'], c: 2, e: 'Antes de entregar, verifique que la orden coincida con lo que pidió el cliente.' },
-  { id: 'equipo', q: 'Si no sabe utilizar un equipo, ¿qué debe hacer?', o: ['Pedir entrenamiento a su líder antes de usarlo', 'Probarlo sin ayuda', 'Pedir a un cliente que le explique'], c: 0, e: 'Pida entrenamiento antes de usar equipos que no conoce.' }
+  { id: 'alitas', q: '¿Cuál de estas salsas puede elegir para las alitas?', o: ['Salsa de chocolate', 'Salsa de fresa', 'Honey Mustard'], c: 2, e: 'Las salsas de las alitas son Honey Mustard, Buffalo y BBQ.' }
 ];
 var MENU_LB = ['labarra/menu-1.jpg', 'labarra/menu-2.jpg'];

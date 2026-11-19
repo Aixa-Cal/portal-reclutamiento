@@ -121,7 +121,7 @@
 
   function induccionHtml(d) {
     var mods = modulosLaBarra(V), di = d.datos || {}, leidos = di.leidos || [], quiz = di.quiz, cl = cli();
-    var h = '<p class="small">Lea cada tema y toque <b>Ya lo leí</b>. Si prefiere, toque <b>Escuchar</b>. Después vea el menú y responda 6 preguntas.</p>' +
+    var h = '<p class="small">Lea cada tema y toque <b>Ya lo leí</b>. Si prefiere, toque <b>Escuchar</b>. Después vea el menú y responda ' + QUIZ_LB.length + ' preguntas.</p>' +
       '<div class="aviso">' + leidos.length + ' de ' + mods.length + ' temas leídos · Cuestionario: ' + (quiz ? quiz.correctas + ' de ' + quiz.total + ' correctas' : 'pendiente') + '</div>';
     mods.forEach(function (m, i) {
       var ok = leidos.indexOf(m.id) >= 0;
