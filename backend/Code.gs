@@ -229,6 +229,7 @@ var CLIENTES = {
     nombre: 'Grupo La Barra',
     razon: 'Inversiones BA AR, S.R.L.',
     directo: true, // contratación directa (no subcontratación)
+    turnos: ['Mañana · 7:00 a. m. a 3:00 p. m.', 'Tarde · 3:00 p. m. a 11:00 p. m.', 'Noche · 11:00 p. m. a 7:00 a. m.', 'Rotativo'],
     pagina: 'lb.html', // página propia: el enlace por WhatsApp muestra Grupo La Barra
     marca: { nombre: 'Grupo La Barra', razon: 'Inversiones BA AR, S.R.L.', logo: 'LB', firmaRRHH: 'RRHH – Grupo La Barra' },
     colores: { pri: '#C91017', osc: '#981017', suave: '#FFF0F0' },
@@ -337,6 +338,7 @@ function nuevoCandidato(d) {
   if (!d.nombre) throw new Error('Falta el nombre');
   if (d.sexo !== 'F' && d.sexo !== 'M') throw new Error('Indique el sexo (uso interno)');
   if (cli.tiendas && cli.tiendas.indexOf(d.tienda) < 0) throw new Error('Elija la tienda');
+  if (cli.turnos && !String(d.turno || '').trim()) throw new Error('Indique el turno');
   var rec = {
     id: 'C' + Date.now().toString(36).toUpperCase() + generarToken(3).toUpperCase(),
     token: generarToken(28),
@@ -352,6 +354,7 @@ function nuevoCandidato(d) {
     correo: String(d.correo || '').trim(),
     sexo: d.sexo,
     tienda: String(d.tienda || '').trim(),
+    turno: String(d.turno || '').trim(),
     vacante: {
       posicion: d.posicion || cli.vacante.posicion,
       salario: d.salario || cli.vacante.salario,
@@ -450,7 +453,7 @@ function etapa(rec) {
 
 function resumen(rec) {
   var p = progreso(rec), dep = depuracion(rec);
-  return { id: rec.id, nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, cliente: rec.cliente, tienda: rec.tienda || '',
+  return { id: rec.id, nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, cliente: rec.cliente, tienda: rec.tienda || '', turno: rec.turno || '',
            posicion: rec.vacante.posicion, creado: rec.creado, actualizado: rec.actualizado, vence: venceEn(rec),
            enviadoEn: rec.enviadoEn, estado: rec.estado, etapa: etapa(rec), progreso: p, depuracion: dep,
            familiaresDeclara: rec.familiares.declara, alertas: alertas(rec) };
@@ -468,7 +471,7 @@ function vistaCandidato(rec) {
                      archivos: (d.archivos || []).map(function (a) { return { nombre: a.nombre, lado: a.lado || '' }; }), hecho: pasoHecho(rec, doc.id) };
   });
   return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
-           tienda: rec.tienda || '', banco: bancoDeTienda(rec.cliente, rec.tienda), empleador: emp, defs: defs, orden: ordenDe(rec),
+           tienda: rec.tienda || '', turno: rec.turno || '', banco: bancoDeTienda(rec.cliente, rec.tienda), empleador: emp, defs: defs, orden: ordenDe(rec),
            cartaBanco: !!rec.cartaBancoArchivo,
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
            lab: { listo: !!rec.lab.referimiento, referimiento: !!rec.lab.referimientoArchivo, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia },
@@ -597,7 +600,7 @@ var ASPECTOS_REF = ['Puntualidad', 'Responsabilidad', 'Calidad del trabajo', 'Co
 var NIVELES_REF = ['Excelente', 'Muy bueno', 'Bueno', 'Aceptable', 'Deficiente'];
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(tienda|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var RUTAS_ADMIN = /^(tienda|turno|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;

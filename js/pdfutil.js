@@ -210,7 +210,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   z.seccion('Candidato');
   var dd = (rec.docs.datos && rec.docs.datos.datos) || {};
   z.campos([['Nombre', rec.nombre], ['Cédula', rec.cedula], ['Teléfono', rec.telefono], ['Correo', dd.correo || rec.correo], ['Posición', rec.vacante.posicion],
-    ['Salario mensual', rec.vacante.salario ? 'RD$' + rec.vacante.salario : ''], cli.directo ? ['Tienda', rec.tienda] : ['Contrato', rec.vacante.contratoMeses + ' meses'], ['Fecha del expediente', fechaCorta(ahoraISO())]], 2);
+    ['Salario mensual', rec.vacante.salario ? 'RD$' + rec.vacante.salario : ''], cli.directo ? ['Tienda / turno', (rec.tienda || '') + (rec.turno ? ' · ' + rec.turno : '')] : ['Contrato', rec.vacante.contratoMeses + ' meses'], ['Fecha del expediente', fechaCorta(ahoraISO())]], 2);
   if (dd.completo) z.campos([['Fecha de nacimiento', dd.nacimiento], ['Dirección', dd.direccion], ['Contacto de emergencia', dd.emergenciaNombre + (dd.emergenciaParentesco ? ' (' + dd.emergenciaParentesco + ')' : '') + ' · ' + dd.emergenciaTelefono], ['Talla', dd.talla]], 2);
   z.seccion('Depuración');
   function est(v) { return v === 'ok' ? 'Completado' : v === 'mal' ? 'Con observación' : 'Pendiente'; }

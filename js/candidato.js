@@ -102,7 +102,7 @@
     var e = emp(), vac = V.vacante || {}, food = V.tienda === 'Food Shop Miraflores';
     return '<div class="card" style="border-top:4px solid var(--azul)"><h1>Hola, ' + esc(primerNombre()) + '</h1>' +
       '<p>¡Nos alegra que siga en el proceso para unirse a <b>' + esc(e.nombre) + '</b>! Complete aquí su expediente de ingreso, paso a paso.</p>' +
-      '<p>Posición: <b>' + esc(vac.posicion || '') + '</b>' + (V.tienda ? ' · Tienda: <b>' + esc(V.tienda) + '</b>' : '') + '</p>' +
+      '<p>Posición: <b>' + esc(vac.posicion || '') + '</b>' + (V.tienda ? ' · Tienda: <b>' + esc(V.tienda) + '</b>' : '') + (V.turno ? '<br>Turno: <b>' + esc(V.turno) + '</b>' : '') + '</p>' +
       '<h3>Condiciones</h3><ul class="small">' +
       (vac.salario ? '<li>Salario base mensual: <b>RD$' + esc(vac.salario) + '</b>. Se paga los días 15 y 30, con los descuentos de ley.</li>' : '') +
       (food ? '<li>Incentivo por desempeño de hasta RD$5,000 mensuales, según su evaluación.</li>' :

@@ -33,7 +33,7 @@
     if (ev.url) pasos.push(numeroPaso(rec, 'evaluacion') + '. *Evaluación del puesto:* hágala cuando esté listo/a, en un lugar tranquilo.');
     return 'Hola *' + primer(rec.nombre) + '*,\n' +
       'Le saluda RRHH de *' + E.nombre + '*.\n\n' +
-      (c.directo ? '¡Nos alegra que siga en el proceso para unirse a *' + E.nombre + '* como *' + rec.vacante.posicion + '*' + (rec.tienda ? ' en *' + rec.tienda + '*' : '') + '! Ahora completamos su expediente de ingreso.\n\n'
+      (c.directo ? '¡Nos alegra que siga en el proceso para unirse a *' + E.nombre + '* como *' + rec.vacante.posicion + '*' + (rec.tienda ? ' en *' + rec.tienda + '*' : '') + (rec.turno ? ', turno *' + rec.turno + '*' : '') + '! Ahora completamos su expediente de ingreso.\n\n'
         : 'Tenemos el placer de informarle que *' + c.nombre + '* desea continuar con la fase de depuración y completación de su expediente para la posición de *' + rec.vacante.posicion + '*.\n\n') +
       '*Complete su expediente aquí, paso a paso:*\n' + enlace(rec) + '\n\n' +
       '*Empiece por aquí:*\n' + pasos.join('\n') + '\n\n' +
@@ -138,7 +138,7 @@
     app.innerHTML = '<div class="nuevo-grid"><div class="card nuevo-form"><h2>Nuevo candidato</h2><p class="muted small">Se crea el expediente y un enlace único para enviárselo por WhatsApp.</p>' +
       '<div class="campo"><label>1. Cédula del candidato (foto o PDF, opcional)</label><input type="file" id="n_cedfile" accept="image/*,application/pdf" multiple><div class="tiny muted" style="margin-top:4px">Súbala primero: se ve al lado para copiar los datos, y el candidato ya no tiene que subirla.</div></div>' +
       '<div class="grid g2"><div class="campo"><label>Empresa</label><select id="n_cliente">' + ops + '</select></div><div class="campo"><label>Posición</label><input id="n_posicion" list="n_puestos"><datalist id="n_puestos"></datalist></div></div>' +
-      '<div class="grid g3 hidden" id="lbCampos"><div class="campo"><label>Tienda *</label><select id="n_tienda"></select></div><div class="campo"><label>Propina mensual (RD$)</label><input id="n_propina"></div><div class="campo"><label>Propina después de 3 meses</label><input id="n_propina2"></div></div>' +
+      '<div class="grid g3 hidden" id="lbCampos"><div class="campo"><label>Tienda *</label><select id="n_tienda"></select></div><div class="campo"><label>Propina mensual (RD$)</label><input id="n_propina"></div><div class="campo"><label>Propina después de 3 meses</label><input id="n_propina2"></div><div class="campo"><label>Turno *</label><input id="n_turno" list="n_turnos" placeholder="Elija o escriba"><datalist id="n_turnos"></datalist></div></div>' +
       '<div class="grid g2"><div class="campo"><label>Nombre completo *</label><input id="n_nombre"></div><div class="campo"><label>Cédula</label><input id="n_cedula" placeholder="000-0000000-0"></div>' +
       '<div class="campo"><label>Teléfono / WhatsApp *</label><input id="n_telefono" placeholder="809-000-0000"></div><div class="campo"><label>Correo</label><input id="n_correo" type="email"></div></div>' +
       '<div class="grid g3"><div class="campo"><label>Salario mensual (RD$)</label><input id="n_salario"></div><div class="campo" id="cContrato"><label>Contrato (meses)</label><input id="n_contrato" type="number" min="1"></div>' +
@@ -152,6 +152,7 @@
       var c = CLIENTES[$('#n_cliente').value], v = c.vacante; $('#n_posicion').value = v.posicion; $('#n_salario').value = v.salario; $('#n_contrato').value = v.contratoMeses;
       $('#lbCampos').classList.toggle('hidden', !c.tiendas); $('#cContrato').classList.toggle('hidden', !!c.directo);
       $('#n_puestos').innerHTML = (c.puestos || []).map(function (p) { return '<option value="' + esc(p.nombre) + '">'; }).join('');
+      $('#n_turnos').innerHTML = (c.turnos || []).map(function (t) { return '<option value="' + esc(t) + '">'; }).join('');
       $('#n_tienda').innerHTML = c.tiendas ? '<option value="">Elija…</option>' + c.tiendas.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') : '';
       puesto(); temaAdmin(c.id);
     }
@@ -174,8 +175,9 @@
       var sx = $('input[name=n_sexo]:checked');
       var datos = { cliente: $('#n_cliente').value, posicion: $('#n_posicion').value.trim(), nombre: $('#n_nombre').value.trim(), cedula: $('#n_cedula').value.trim(), telefono: $('#n_telefono').value.trim(),
         correo: $('#n_correo').value.trim(), salario: $('#n_salario').value.trim(), contratoMeses: $('#n_contrato').value, sexo: sx ? sx.value : '', cedulaVence: $('#n_cedvence').value, evaluacionUrl: $('#n_evalurl').value.trim(), evaluacionNombre: $('#n_evalnom').value.trim(),
-        tienda: $('#n_tienda').value, propina: $('#n_propina').value.trim(), propinaDespues: $('#n_propina2').value.trim() };
+        tienda: $('#n_tienda').value, turno: $('#n_turno').value.trim(), propina: $('#n_propina').value.trim(), propinaDespues: $('#n_propina2').value.trim() };
       if (CLIENTES[datos.cliente].tiendas && !datos.tienda) return toast('Elija la tienda', 'mal');
+      if (CLIENTES[datos.cliente].turnos && !datos.turno) return toast('Indique el turno', 'mal');
       if (datos.evaluacionUrl && !/^https?:\/\//i.test(datos.evaluacionUrl)) return toast('El enlace de evaluación debe empezar con https://', 'mal');
       if (!datos.nombre || !datos.telefono) return toast('Falta nombre o teléfono', 'mal');
       if (!datos.posicion) return toast('Escriba la posición', 'mal');
@@ -218,7 +220,7 @@
     var r = REC, c = CLIENTES[r.cliente], dep = depuracion(r), et = etapa(r), p = progreso(r);
     function sem(v, t, sub) { return '<div class="sem ' + (v === 'ok' ? 'ok' : v === 'mal' ? 'mal' : 'pend') + '"><b>' + t + '</b>' + (v === 'ok' ? 'Completo' : v === 'mal' ? 'Con observación' : 'Pendiente') + (sub ? '<div class="tiny muted">' + sub + '</div>' : '') + '</div>'; }
     var refs = ((r.docs.referencia.datos || {}).refs || []);
-    var h = '<div class="panel-h" style="border-top:5px solid ' + c.colores.pri + '"><div style="flex:1;min-width:0"><h2 style="margin:0">' + esc(r.nombre) + '</h2><div class="small muted" style="margin-top:4px">' + chipCliente(r.cliente) + ' ' + esc(r.vacante.posicion) + (r.tienda ? ' · ' + esc(r.tienda) : '') + ' · creado ' + fechaCorta(r.creado) + '</div></div>' + pillEtapa(et) + '<button class="btn sm" id="cerrar">✕</button></div><div class="panel-b">';
+    var h = '<div class="panel-h" style="border-top:5px solid ' + c.colores.pri + '"><div style="flex:1;min-width:0"><h2 style="margin:0">' + esc(r.nombre) + '</h2><div class="small muted" style="margin-top:4px">' + chipCliente(r.cliente) + ' ' + esc(r.vacante.posicion) + (r.tienda ? ' · ' + esc(r.tienda) : '') + (r.turno ? ' · Turno ' + esc(r.turno) : '') + ' · creado ' + fechaCorta(r.creado) + '</div></div>' + pillEtapa(et) + '<button class="btn sm" id="cerrar">✕</button></div><div class="panel-b">';
 
     // Enlace y mensajes
     h += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><b>Avance del candidato</b><span>' + p.hechos + '/' + p.total + (r.enviadoEn ? ' · Envió completo ' + fechaHora(r.enviadoEn) : ' · Vence ' + fechaHora(venceEn(r))) + '</span></div><div class="barra"><i style="width:' + p.pct + '%"></i></div>' +
@@ -336,7 +338,7 @@
 
     // Datos
     h += '<div class="card"><h3>Datos del candidato</h3><div class="grid g3">' +
-      [['nombre', 'Nombre'], ['cedula', 'Cédula'], ['cedulaVence', 'Cédula vence (AAAA-MM-DD)'], ['telefono', 'Teléfono'], ['correo', 'Correo'], ['vacante.posicion', 'Posición'], ['vacante.salario', 'Salario RD$'], ['vacante.contratoMeses', 'Contrato (meses)']].map(function (x) {
+      [['nombre', 'Nombre'], ['cedula', 'Cédula'], ['cedulaVence', 'Cédula vence (AAAA-MM-DD)'], ['telefono', 'Teléfono'], ['correo', 'Correo'], ['vacante.posicion', 'Posición'], ['vacante.salario', 'Salario RD$'], ['vacante.contratoMeses', 'Contrato (meses)']].concat(c.turnos ? [['turno', 'Turno']] : []).map(function (x) {
         var v = x[0].split('.').reduce(function (o, k) { return o == null ? '' : o[k]; }, r); if (v == null) v = ''; return '<div class="campo"><label>' + x[1] + '</label><input data-campo="' + x[0] + '" value="' + esc(v) + '"></div>';
       }).join('') + '<div class="campo"><label>Sexo (interno)</label><select data-campo="sexo"><option value="F"' + (r.sexo === 'F' ? ' selected' : '') + '>Femenino</option><option value="M"' + (r.sexo === 'M' ? ' selected' : '') + '>Masculino</option></select></div></div>' +
       '<div class="campo"><label>Notas internas</label><textarea data-campo="notas" rows="2">' + esc(r.notas) + '</textarea></div><button class="btn sm" id="datosGuardar">Guardar datos</button></div>';

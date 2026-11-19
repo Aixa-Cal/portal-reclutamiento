@@ -26,7 +26,7 @@ function modulosLaBarra(V) {
   return [
     { id: 'bienvenida', titulo: '¡Bienvenido/a al equipo de La Barra!', sub: 'Le deseamos mucho éxito en esta nueva etapa', p: [
       'Aquí encontrará la información que necesita para su ingreso y para conocer nuestros procedimientos.',
-      'Al ingresar, se le informará su posición, sucursal, horario y salario. A su salario se le aplicarán los descuentos de ley.',
+      (V.turno ? 'Su posición es ' + (vac.posicion || '') + ' en ' + t + ', turno ' + V.turno + '. Su supervisor le confirmará el horario exacto y su día libre.' : 'Al ingresar, se le informará su posición, sucursal, horario y salario.') + ' A su salario se le aplicarán los descuentos de ley.',
       'Su supervisor le explicará sus funciones y le acompañará durante su entrenamiento. Si tiene alguna duda, pregunte antes de realizar una tarea.'] },
     pago,
     { id: 'normas', titulo: 'Presentación y normas de trabajo', sub: 'Prepárese para cada turno', p: [
