@@ -272,7 +272,7 @@
     // Laboratorio
     var lab = r.lab;
     h += '<div class="card"><h3>Evaluación pre empleo · Laboratorios Referencia</h3><div class="interno"><div class="tiny" style="color:var(--azul);font-weight:700;margin-bottom:6px">USO INTERNO — EL CANDIDATO NO VE ESTO</div>' +
-      '<div class="grid g2"><div><div class="tiny muted">Prueba a solicitar</div><b style="font-size:1.1rem">' + esc(lab.prueba) + '</b></div><div><div class="tiny muted">Datos para el portal del laboratorio</div><div class="small">' + esc(r.nombre) + ' · ' + esc(r.cedula || 'sin cédula') + '<br>Empresa: ' + esc(c.directo ? empleador(r.cliente).razon : EMPRESA.razon) + '</div></div></div>' +
+      '<div class="grid g2"><div><div class="tiny muted">Prueba a solicitar</div><b style="font-size:1.1rem">' + esc(lab.prueba) + '</b></div><div><div class="tiny muted">Datos para el portal del laboratorio</div><div class="small">' + esc(r.nombre) + ' · ' + esc(r.cedula || 'sin cédula') + '<br>Cuenta del laboratorio: ' + esc(cuentaLab(r.cliente)) + '</div></div></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" id="cpLab">Copiar datos</button>' + (cfg.LAB_PORTAL_URL ? '<a class="btn sm" target="_blank" href="' + esc(cfg.LAB_PORTAL_URL) + '">Abrir portal del laboratorio ↗</a>' : '') + '</div></div>' +
       '<div style="margin-top:14px" class="grid g2"><div><label>1. Referimiento</label>' + (lab.referimiento ? '<div class="aviso ok" style="margin:0 0 8px">Generado ' + fechaHora(lab.referimientoEn) + '. El candidato ya ve las instrucciones para ir.</div>' : '<button class="btn sm pri" id="labRef">Marcar referimiento generado</button> ') +
       '<label class="btn sm" style="margin-top:6px">Subir referimiento (el candidato lo descarga)<input type="file" class="hidden" id="upRef" accept="application/pdf,image/*"></label>' + (lab.referimientoArchivo ? ' <button class="btn sm" data-ver="' + lab.referimientoArchivo.fileId + '">👁 Ver</button>' : '') +
@@ -299,9 +299,26 @@
         (di.completo ? '<div class="aviso ok" style="margin-top:10px">Inducción completada.</div>' : '') + '<p class="tiny muted">La inducción no confirma la contratación.</p></div>';
     }
 
+    function bloqueRRHH2(t, a) { return bloqueRRHH(t, a); }
+    // Evaluaciones psicométricas
+    var ps = r.psico || {}, correoC = r.correo || ((r.docs.datos && r.docs.datos.datos) || {}).correo || '';
+    h += '<div class="card"><h3>Evaluaciones psicométricas</h3>' +
+      '<div class="small" style="margin-bottom:8px">Correo del candidato: ' + (correoC ? '<b>' + esc(correoC) + '</b> <button class="btn sm" data-copiar="' + esc(correoC) + '">Copiar</button>' : '<span class="pill pend">Sin correo</span> <span class="muted">Guárdelo en "Datos" cuando se lo envíe.</span>') + '</div>' +
+      '<label class="check" style="margin-bottom:6px"><input type="checkbox" data-psico="enviada"' + (ps.enviada ? ' checked' : '') + '> Evaluaciones enviadas' + (ps.enviada ? ' <span class="muted tiny">(' + esc(fechaCorta(ps.enviada)) + ')</span>' : '') + '</label>' +
+      '<label class="check"><input type="checkbox" data-psico="completada"' + (ps.completada ? ' checked' : '') + '> El candidato las completó' + (ps.completada ? ' <span class="muted tiny">(' + esc(fechaCorta(ps.completada)) + ')</span>' : '') + '</label>' +
+      '<div style="margin-top:8px">' + bloqueRRHH2('psico', 'Suba aquí los resultados. Se incluyen al final del expediente.') + '</div></div>';
+
+    // Tareas del primer día
+    var tar2 = r.tareas || {}, LISTA_ING = c.directo ?
+      [['tss', 'Alta en la TSS'], ['nomina', 'Registro en la nómina'], ['ponche', 'Registro en el ponche'], ['uniforme', 'Uniforme entregado' + (((r.docs.datos && r.docs.datos.datos) || {}).talla ? ' (talla ' + ((r.docs.datos.datos || {}).talla) + ')' : '')], ['cartaNomina', 'Carta de nómina enviada']] :
+      [['tss', 'Alta en la TSS'], ['nomina', 'Registro en la nómina']];
+    var hechas = LISTA_ING.filter(function (x) { return tar2[x[0]]; }).length;
+    h += '<div class="card"><h3>Primer día · tareas de ingreso <span class="pill ' + (hechas === LISTA_ING.length ? 'ok' : 'gris') + '">' + hechas + ' de ' + LISTA_ING.length + '</span></h3><p class="small muted">Márquelas cuando el colaborador ya entra.</p>' +
+      LISTA_ING.map(function (x) { return '<label class="check" style="margin-bottom:6px"><input type="checkbox" data-ingreso="' + x[0] + '"' + (tar2[x[0]] ? ' checked' : '') + '> ' + esc(x[1]) + (tar2[x[0]] && tar2[x[0]] !== true ? ' <span class="muted tiny">(' + esc(fechaCorta(tar2[x[0]])) + ')</span>' : '') + '</label>'; }).join('') + '</div>';
+
     // CV y reportes de evaluación (solo RRHH)
-    var rr = r.rrhh || {};
     function bloqueRRHH(tipo, ayuda) {
+      var rr = r.rrhh || {};
       var arr = rr[tipo] || [];
       return '<div class="doc-row" style="align-items:flex-start"><div class="t"><div style="font-weight:600;font-size:.92rem">' + TIPOS_RRHH[tipo].titulo + '</div><div class="tiny muted">' + ayuda + '</div>' +
         (arr.length ? '<div class="archivos">' + arr.map(function (a) { return '<span style="display:inline-flex;gap:4px"><button class="btn sm" data-ver="' + a.fileId + '">👁 ' + esc(a.nombre) + '</button><button class="btn sm mal" title="Quitar del expediente" data-quitarrrhh="' + tipo + '|' + a.fileId + '">×</button></span>'; }).join('') + '</div>' : '<div class="tiny muted" style="margin-top:4px">Sin archivos</div>') + '</div>' +
@@ -359,6 +376,9 @@
     $('#cerrar').onclick = cerrar;
     $('#cpEnlace').onclick = function () { copiar(enlace(r)); };
     var ext = $('#extender'); if (ext) ext.onclick = function () { cambiar([['plazoExtraDias', Number(r.plazoExtraDias || 0) + 2]], 'Plazo extendido 2 días'); };
+    $$('[data-psico]').forEach(function (c) { c.onchange = function () { cambiar([['psico.' + c.getAttribute('data-psico'), c.checked ? ahoraISO() : false]], 'Guardado'); }; });
+    $$('[data-ingreso]').forEach(function (c) { c.onchange = function () { cambiar([['tareas.' + c.getAttribute('data-ingreso'), c.checked ? ahoraISO() : false]], 'Guardado'); }; });
+    $$('[data-copiar]').forEach(function (b) { b.onclick = function () { copiar(b.getAttribute('data-copiar')); }; });
     $$('[data-tarea]').forEach(function (c) { c.onchange = function () { cambiar([['tareas.' + c.getAttribute('data-tarea'), c.checked]], 'Guardado'); }; });
     $$('[data-subirdoc]').forEach(function (inp) { inp.onchange = async function () {
       var fs = Array.prototype.slice.call(inp.files || []); if (!fs.length) return; toast('Subiendo…');
@@ -377,7 +397,7 @@
       var v = this.value; if (v === 'listo' && !depuracion(r).listo && !confirm('La depuración no está completa. ¿Marcar como listo de todas formas?')) { this.value = r.estado; return; }
       cambiar([['estado', v]], 'Estado actualizado');
     };
-    $('#cpLab').onclick = function () { copiar('Nombre: ' + r.nombre + '\nCédula: ' + r.cedula + '\nEmpresa: ' + (CLIENTES[r.cliente].directo ? empleador(r.cliente).razon : EMPRESA.razon) + '\nPrueba: ' + r.lab.prueba); };
+    $('#cpLab').onclick = function () { copiar('Nombre: ' + r.nombre + '\nCédula: ' + r.cedula + '\nEmpresa: ' + cuentaLab(r.cliente) + '\nPrueba: ' + r.lab.prueba); };
     var lr = $('#labRef'); if (lr) lr.onclick = function () { cambiar([['lab.referimiento', true]], 'Referimiento marcado. Avísele por WhatsApp.'); };
     async function subirLab(input, campo) {
       var f = input.files[0]; if (!f) return; toast('Subiendo…');

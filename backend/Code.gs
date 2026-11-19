@@ -231,6 +231,7 @@ var CLIENTES = {
     directo: true, // contratación directa (no subcontratación)
     diaLibreTrasDias: 15, // a los 15 días de entrenamiento el líder asigna el día libre
     turnos: ['Mañana · 7:00 a. m. a 3:00 p. m.', 'Tarde · 3:00 p. m. a 11:00 p. m.', 'Noche · 11:00 p. m. a 7:00 a. m.', 'Rotativo'],
+    labCuenta: 'Inversiones BA AR, S.R.L.', // cuenta de La Barra en Laboratorios Referencia (solo la ve RRHH)
     pagina: 'lb.html', // página propia: el enlace por WhatsApp muestra Grupo La Barra
     marca: { nombre: 'Grupo La Barra', razon: 'Grupo La Barra', logo: 'LB', firmaRRHH: 'RRHH – Grupo La Barra' },
     colores: { pri: '#C91017', osc: '#981017', suave: '#FFF0F0' },
@@ -269,6 +270,9 @@ function textoEntrenamiento(clienteId, posicion) {
     'Su entrenamiento completo toma ' + p.entrenamientoCompleto + '. A los primeros ' + c.diaLibreTrasDias + ' días, su líder le asigna su día libre semanal.' :
     'Su entrenamiento dura ' + c.diaLibreTrasDias + ' días. Al completarlo, su líder le asigna su día libre semanal.';
 }
+/* Empresa a nombre de la cual se genera el referimiento del laboratorio (solo RRHH) */
+function cuentaLab(clienteId) { var c = CLIENTES[clienteId] || {}; return c.labCuenta || EMPRESA.razon; }
+
 /* Salario quincenal aproximado después de AFP (2.87%) y SFS (3.04%), y del ISR si aplica (escala anual DGII). */
 function numeroRD(v) { return parseFloat(String(v || '').replace(/[^0-9.]/g, '')) || 0; }
 function formatoRD(n) { return 'RD$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -610,7 +614,7 @@ function aplicarEvaluacion(rec, accion) {
 }
 
 /* Archivos de RRHH (CV y reportes de evaluación): solo los ve RRHH y van en el expediente */
-var TIPOS_RRHH = { cv: { n: 0, titulo: 'Currículum (CV)' }, reportes: { n: 12, titulo: 'Reportes de evaluación' } };
+var TIPOS_RRHH = { cv: { n: 0, titulo: 'Currículum (CV)' }, reportes: { n: 12, titulo: 'Reportes de evaluación' }, psico: { n: 13, titulo: 'Evaluaciones psicométricas' } };
 function aplicarRRHH(rec, tipo, metas) {
   if (!TIPOS_RRHH[tipo]) throw new Error('Tipo no válido');
   rec.rrhh = rec.rrhh || {}; rec.rrhh[tipo] = (rec.rrhh[tipo] || []).concat(metas);
@@ -638,7 +642,7 @@ var ASPECTOS_REF = ['Puntualidad', 'Responsabilidad', 'Calidad del trabajo', 'Co
 var NIVELES_REF = ['Excelente', 'Muy bueno', 'Bueno', 'Aceptable', 'Deficiente'];
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(tienda|turno|lider|liderTelefono|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var RUTAS_ADMIN = /^(tienda|turno|lider|liderTelefono|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco|tss|nomina|ponche|uniforme|cartaNomina)|psico\.(enviada|completada)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;

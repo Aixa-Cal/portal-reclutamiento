@@ -246,6 +246,7 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
     lista.push({ n: doc.n, t: doc.titulo, archivos: ordenarLados(doc, d.archivos) });
   });
   if ((rr.reportes || []).length) lista.push({ n: '—', t: TIPOS_RRHH.reportes.titulo, archivos: rr.reportes });
+  if ((rr.psico || []).length) lista.push({ n: '—', t: TIPOS_RRHH.psico.titulo, archivos: rr.psico });
   z.tabla(['#', 'Documento', 'Observación'], lista.map(function (x) { return [String(x.n), x.t, x.nota || (x.archivos && x.archivos.length ? x.archivos.length + ' archivo(s)' : x.pagina ? 'Incluido' : 'Falta')]; }), [0.06, 0.6, 0.34]);
   z.y -= 8; z.texto('Preparado por ' + E.firmaRRHH, { size: 8.5, color: GRIS });
 
