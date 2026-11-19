@@ -17,6 +17,14 @@ function modulosLaBarra(V) {
         entreno],
       ejemplo: { t: 'Su primer día de trabajo.', bien: 'Llega 10 minutos antes, se presenta con su líder y, si no sabe algo, pregunta.', mal: 'Hacer algo "a su manera" sin preguntar. Preguntar no es malo; equivocarse por no preguntar, sí.' } },
 
+    { id: 'integridad', icono: '🤝', titulo: 'Integridad: lo más importante', sub: 'Sin esto, no hay relación laboral',
+      clave: 'En La Barra no se roba, no se toma la propina y no se le miente al cliente. Si no puede cumplir con esto, este trabajo no es para usted.',
+      si: ['La propina es colectiva: va completa al lugar de las propinas', 'Decir la verdad al cliente, aunque nos hayamos equivocado', 'Reportar a su líder cualquier error o faltante', 'Pedir apoyo a su líder cuando lo necesite'],
+      no: ['Tomar dinero, comida o productos de la tienda', 'Guardarse una propina, aunque sea pequeña', 'Inventar excusas al cliente', 'Esconder un error'],
+      ejemplos: [
+        { t: 'Un cliente le pone RD$100 de propina en la mano.', bien: 'Le da las gracias y la pone con las propinas del equipo. La propina es de todos.', mal: 'Guardársela en el bolsillo. Eso es tomar dinero que es de todos.' },
+        { t: 'Se le olvidó la batida de un cliente que lleva 15 minutos esperando.', bien: 'Le dice la verdad: "Disculpe, se me pasó su batida. Se la preparo ahora mismo". Si necesita ayuda, avisa a su líder.', mal: 'Decirle "es que se dañó la licuadora". Al cliente no se le miente.' }] },
+
     { id: 'presentacion', icono: '👕', titulo: 'Su presentación', sub: 'Lo primero que ve el cliente',
       clave: 'Venga SIEMPRE bien vestido/a, presentado/a e higienizado/a, con el uniforme limpio. NO se permiten chancletas.',
       si: ['Uniforme completo y limpio, todos los días', 'Gorra puesta y cabello recogido', 'Pantalón jean o negro', 'Zapatos cerrados', 'Bañado/a, uñas cortas y limpias'],
@@ -31,8 +39,16 @@ function modulosLaBarra(V) {
 
     { id: 'servicio', icono: '🙋', titulo: 'Cómo atendemos al cliente', sub: 'Siempre en este orden',
       clave: 'El saludo es ley: "¡Bienvenido a La Barra!". Luego: tomar la orden → confirmar → cobrar → entregar.',
-      p: ['1. Saludar: "¡Bienvenido a La Barra!"', '2. Tomar la orden. Si es mucho, anótelo.', '3. Confirmar: repita el pedido al cliente.', '4. Cobrar.', '5. Entregar, revisando que esté igual a lo que pidió.'],
+      p: ['1. Saludar: "¡Bienvenido a La Barra!"', '2. Tomar la orden. Si es mucho, anótelo.', '3. Confirmar: repita el pedido al cliente.', '4. Cobrar.', '5. Entregar, revisando que esté igual a lo que pidió.',
+        'Tomamos órdenes de 3 formas:', '🪑 En barra: el cliente pide y come en la tienda.', '🛵 Delivery: se anota la dirección completa y un teléfono, y se le dice el tiempo aproximado de entrega.', '🥡 Para llevar (takeout): se confirma el nombre de quien lo va a recoger y en qué sucursal.'],
+      ejemplos: [{ t: 'Llaman para un delivery de 2 sándwiches.', bien: 'Saluda, anota el pedido, la dirección completa (calle, número, referencia) y el teléfono, confirma todo, dice el total y el tiempo aproximado.', mal: 'Anotar solo "2 sándwiches para Juan". El delivery no llega o llega lo que no era.' }],
       ejemplo: { t: 'Un cliente dice: "Dame un Barra Club y una batida de chinola".', bien: '"¡Bienvenido a La Barra! ¿La batida natural o en leche?… Natural. Le confirmo: un Barra Club y una batida de chinola natural. Son RD$690." Cobra, prepara y entrega.', mal: '"¿Qué quiere?", no confirmar y entregar una batida en leche que el cliente no pidió.' } },
+
+    { id: 'limpieza', icono: '🧽', titulo: 'Tienda, baños y áreas limpias', sub: 'La higiene es parte de nosotros',
+      clave: 'Todos colaboramos para mantener la tienda, los baños y las áreas siempre limpias. Sobre todo donde están los alimentos.',
+      si: ['Limpiar mientras trabaja: "limpio al usar, limpio al terminar"', 'Revisar los baños: limpios, con papel y jabón', 'Mesas, barra y piso limpios para el próximo cliente', 'Botar la basura a tiempo y con la tapa cerrada'],
+      no: ['Decir "eso no me toca a mí"', 'Dejar derrames en el piso', 'Acumular trastes o basura en el área de alimentos'],
+      ejemplo: { t: 'Entra al baño y no hay papel y el piso está mojado.', bien: 'Repone el papel, seca el piso o avisa a su compañero de turno de inmediato.', mal: 'Salir y no decir nada. El próximo cliente se lleva esa imagen de La Barra.' } },
 
     { id: 'higiene', icono: '🧼', titulo: 'Manos limpias (ServSafe)', sub: 'Esto aplica para todos',
       clave: 'Lávese las manos por al menos 20 segundos, con agua tibia y jabón. Los guantes NO sustituyen el lavado.',
@@ -85,10 +101,13 @@ function modulosLaBarra(V) {
 /* Texto completo de un tema, para el botón Escuchar */
 function textoModulo(m) {
   return [m.titulo, m.clave].concat(m.p || []).concat(m.si ? ['Así sí: ' + m.si.join('. ')] : []).concat(m.no ? ['Así no: ' + m.no.join('. ')] : [])
-    .concat(m.ejemplo ? ['Ejemplo: ' + m.ejemplo.t, 'Lo correcto: ' + m.ejemplo.bien, 'Lo incorrecto: ' + m.ejemplo.mal] : []).filter(Boolean).map(function (x) { return String(x).replace(/[.\s]+$/, ''); }).join('. ') + '.';
+    .concat([].concat(m.ejemplo ? [m.ejemplo] : [], m.ejemplos || []).reduce(function (a, e) { return a.concat(['Ejemplo: ' + e.t, 'Lo correcto: ' + e.bien, 'Lo incorrecto: ' + e.mal]); }, [])).filter(Boolean).map(function (x) { return String(x).replace(/[.\s]+$/, ''); }).join('. ') + '.';
 }
 
 var QUIZ_LB = [
+  { id: 'banos', q: 'Ve el baño de la tienda sucio. ¿Qué hace?', o: ['Nada, no es mi trabajo', 'Lo limpio o aviso de inmediato', 'Espero al cierre'], c: 1, e: 'Todos colaboramos con la limpieza de la tienda, los baños y las áreas. La higiene es parte de nosotros.' },
+  { id: 'propina', q: 'Un cliente le da una propina en la mano. ¿Qué hace?', o: ['Me la quedo, me la dio a mí', 'La pongo con las propinas del equipo', 'La reparto con quien yo quiera'], c: 1, e: 'La propina es colectiva: va completa con las propinas de todo el equipo.' },
+  { id: 'verdad', q: 'Se le olvidó el pedido de un cliente. ¿Qué hace?', o: ['Le digo la verdad, lo preparo ya y aviso a mi líder si necesito apoyo', 'Le digo que se dañó la máquina', 'Hago como si nada'], c: 0, e: 'Al cliente no se le miente. Se habla con la verdad y se pide apoyo al líder.' },
   { id: 'chancletas', q: '¿Puede venir a trabajar en chancletas?', o: ['Sí, si están limpias', 'Solo los fines de semana', 'No, nunca'], c: 2, e: 'No se permiten chancletas. Siempre zapatos cerrados, uniforme limpio y buena presentación.' },
   { id: 'saludo', q: '¿Cuál es el saludo de La Barra?', o: ['"Hola, ¿qué quiere?"', '"¡Bienvenido a La Barra!"', '"Siguiente"'], c: 1, e: 'El saludo es ley: a cada cliente se le dice "¡Bienvenido a La Barra!".' },
   { id: 'orden', q: '¿Cuál es el orden correcto para atender un pedido?', o: ['Cobrar, tomar la orden y entregar', 'Tomar la orden, entregar y cobrar', 'Tomar la orden, confirmarla, cobrar y entregar'], c: 2, e: 'Primero se toma la orden, se confirma, se cobra y luego se entrega.' },

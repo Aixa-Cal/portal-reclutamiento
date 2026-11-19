@@ -132,8 +132,8 @@
         (m.p || []).map(function (t) { return '<p class="small" style="margin:6px 0">' + esc(t) + '</p>'; }).join('') +
         (m.si || m.no ? '<div class="sino">' + (m.si ? '<div class="si"><b>✓ Así sí</b><ul>' + m.si.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '') +
           (m.no ? '<div class="no"><b>✗ Así no</b><ul>' + m.no.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '') + '</div>' : '') +
-        (m.ejemplo ? '<div class="ejemplo"><div class="tiny" style="font-weight:700;letter-spacing:.03em">EJEMPLO DE LA VIDA REAL</div><p class="small" style="margin:4px 0 8px"><b>' + esc(m.ejemplo.t) + '</b></p>' +
-          '<p class="small" style="margin:4px 0">✅ ' + esc(m.ejemplo.bien) + '</p><p class="small" style="margin:4px 0">❌ ' + esc(m.ejemplo.mal) + '</p></div>' : '') +
+        [].concat(m.ejemplo ? [m.ejemplo] : [], m.ejemplos || []).map(function (e) { return '<div class="ejemplo"><div class="tiny" style="font-weight:700;letter-spacing:.03em">EJEMPLO DE LA VIDA REAL</div><p class="small" style="margin:4px 0 8px"><b>' + esc(e.t) + '</b></p>' +
+          '<p class="small" style="margin:4px 0">✅ ' + esc(e.bien) + '</p><p class="small" style="margin:4px 0">❌ ' + esc(e.mal) + '</p></div>'; }).join('') +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-escuchar="' + m.id + '">🔊 Escuchar</button>' + (ok ? '<span class="pill ok">Leído</span>' : '<button class="btn sm pri" data-leido="' + m.id + '">Ya lo leí</button>') + '</div></div>';
     });
     h += '<div class="card flat" style="padding:14px 16px"><b>Nuestro menú</b><p class="small muted">Toque una imagen para verla grande.</p><div class="grid g2">' +
