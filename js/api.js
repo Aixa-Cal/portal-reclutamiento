@@ -34,7 +34,7 @@ var API = (function () {
     'cand.subir': async function (db, r) {
       var rec = porToken(db, r.token); exigirAbierto(rec);
       var base = (rec.docs[r.doc].estado === 'rechazado' || r.reemplazar) ? 0 : rec.docs[r.doc].archivos.length, metas = [];
-      var arcs = asignarLados(rec, r.doc, r.archivos || []); for (var i = 0; i < arcs.length; i++) { var mm = await guardarArch(rec, nombreArchivo(rec, r.doc, base + i, ext(arcs[i].nombre, arcs[i].mime), arcs[i].lado), arcs[i]); if (arcs[i].lado) mm.lado = arcs[i].lado; metas.push(mm); }
+      var arcs = asignarLados(rec, r.doc, r.archivos || []); for (var i = 0; i < arcs.length; i++) { var mm = await guardarArch(rec, (r.datos && r.datos.compromiso) ? 'Compromiso de integridad - firmado.pdf' : nombreArchivo(rec, r.doc, base + i, ext(arcs[i].nombre, arcs[i].mime), arcs[i].lado), arcs[i]); if (arcs[i].lado) mm.lado = arcs[i].lado; metas.push(mm); }
       aplicarSubida(rec, r.doc, metas, r.datos || {}, !!r.reemplazar); guardar(db); return vistaCandidato(rec);
     },
     'cand.referimiento': async function (db, r) {

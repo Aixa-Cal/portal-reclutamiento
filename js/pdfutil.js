@@ -161,8 +161,8 @@ async function pdfDeclaracion(d, cli, firma, meta) {
 /* ---------- La Barra: declaración digital ---------- */
 async function pdfDeclaracionLB(d, cli, firma, meta) {
   var emp = cli.marca || {};
-  var z = await nuevoLienzo(cli.colores.pri, emp.nombre); z.pie = 'Declaración · ' + d.nombre + ' · ' + (emp.razon || cli.razon) + ' · Código ' + meta.codigo;
-  z.encabezado('Declaración de relaciones e información personal', (emp.razon || cli.razon) + ' · Fecha: ' + fechaCorta(meta.fecha));
+  var z = await nuevoLienzo(cli.colores.pri, emp.nombre); z.pie = 'Declaración · ' + d.nombre + ' · ' + (emp.nombre || cli.nombre) + ' · Código ' + meta.codigo;
+  z.encabezado('Declaración de relaciones e información personal', (emp.nombre || cli.nombre) + ' · Fecha: ' + fechaCorta(meta.fecha));
   z.campos([['Nombre', d.nombre], ['Cédula', d.cedula]], 2);
   z.seccion('1. ¿Tiene familiares trabajando en ' + (emp.nombre || cli.nombre) + '?'); z.respuesta(siNo(d.p2));
   if (d.p2 === 'si') z.tabla(['Nombre', 'Parentesco', 'Cédula', 'Tienda o área'], (d.p2filas || []).map(function (r) { return [r.nombre, r.relacion, r.cedula, r.entidad]; }), [0.32, 0.2, 0.22, 0.26]);
@@ -173,6 +173,19 @@ async function pdfDeclaracionLB(d, cli, firma, meta) {
   z.seccion('Declaración');
   z.texto('Certifico que la información es completa y verídica. Me comprometo a informar a Recursos Humanos cualquier cambio.', { size: 9 });
   await z.firma(firma, d.nombre, d.cedula, fechaLarga(meta.fecha), 'Aceptación: marcó "Certifico que la información es completa y verídica". Dispositivo: ' + meta.dispositivo + '. Código ' + meta.codigo + '.');
+  return await z.doc.save();
+}
+
+/* ---------- La Barra: compromiso de integridad firmado ---------- */
+async function pdfCompromiso(V, cli, firma, meta) {
+  var E = empleador(cli.id);
+  var z = await nuevoLienzo(cli.colores.pri, E.nombre); z.pie = 'Compromiso de integridad · ' + V.nombre + ' · ' + E.nombre + ' · Código ' + meta.codigo;
+  z.encabezado('Compromiso de integridad', E.nombre + (V.tienda ? ' · ' + V.tienda : '') + ' · Fecha: ' + fechaCorta(meta.fecha));
+  z.campos([['Nombre', V.nombre], ['Cédula', V.cedula], ['Posición', (V.vacante || {}).posicion], ['Tienda', V.tienda]], 2);
+  z.seccion('Me comprometo a:');
+  COMPROMISO_LB.forEach(function (x, i) { z.texto((i + 1) + '. ' + x, { size: 10 }); });
+  z.y -= 6; z.texto('Entiendo que la integridad es un valor de ' + E.nombre + ' y que, si no cumplo con este compromiso, no puede haber una relación laboral.', { size: 9.5 });
+  await z.firma(firma, V.nombre, V.cedula, fechaLarga(meta.fecha), 'Aceptación: marcó "Me comprometo con la integridad". Dispositivo: ' + meta.dispositivo + '. Código ' + meta.codigo + '.');
   return await z.doc.save();
 }
 
@@ -225,7 +238,8 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   var lista = [], rr = rec.rrhh || {};
   if ((rr.cv || []).length) lista.push({ n: '—', t: TIPOS_RRHH.cv.titulo, archivos: rr.cv });
   docsDe(rec).forEach(function (doc) {
-    var d = rec.docs[doc.id]; if (!d || doc.tipo === 'datos' || doc.tipo === 'induccion') return;
+    var d = rec.docs[doc.id]; if (!d || doc.tipo === 'datos') return;
+    if (doc.tipo === 'induccion') { if ((d.archivos || []).length) lista.push({ n: doc.n, t: 'Compromiso de integridad (firmado)', archivos: d.archivos }); return; }
     if (doc.tipo === 'laboratorio') { if (rec.lab.resultadoArchivo) lista.push({ n: doc.n, t: doc.titulo + ' (resultado)', archivos: [rec.lab.resultadoArchivo] }); else lista.push({ n: doc.n, t: doc.titulo, nota: rec.lab.resultado === 'apto' ? 'Apto – resultado recibido del laboratorio' : 'Pendiente' }); return; }
     if (doc.tipo === 'referencia') { lista.push({ n: doc.n, t: doc.titulo, pagina: true }); return; }
     if (d.datos && d.datos.noAplica) { lista.push({ n: doc.n, t: doc.titulo, nota: 'No aplica – ' + doc.noAplica }); return; }

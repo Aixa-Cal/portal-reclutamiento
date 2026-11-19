@@ -67,7 +67,7 @@
       'Su *evaluación pre empleo* ya está lista. Vaya *cuanto antes*.\n\n' +
       '1. Abra su enlace y en el *paso ' + p + '* descargue su *referimiento*.\n' +
       '2. Vaya a *Laboratorios Referencia* con su *cédula* y el referimiento (en el celular o impreso).\n' +
-      '3. Diga que va de parte de *' + empleador(rec.cliente).nombre + (CLIENTES[rec.cliente].directo ? ' (' + empleador(rec.cliente).razon + ')' : '') + '*.\n' +
+      '3. Diga que va de parte de *' + empleador(rec.cliente).nombre + (CLIENTES[rec.cliente].directo && rec.tienda ? ' (' + rec.tienda + ')' : '') + '*.\n' +
       '4. *No tiene que pagar nada.*\n\n' +
       'Su enlace: ' + enlace(rec) + '\n\n' +
       'Cuando vaya, márquelo en el paso ' + p + '.\n\n' + empleador(rec.cliente).firmaRRHH;
@@ -294,7 +294,8 @@
     if (r.docs.induccion) {
       var di = r.docs.induccion.datos || {}, qz = di.quiz;
       h += '<div class="card"><h3>Inducción · Conozca La Barra</h3><div class="small">Temas leídos: <b>' + (di.leidos || []).length + ' de ' + (di.modulosTotal || 7) + '</b> · Cuestionario: <b>' + (qz ? qz.correctas + ' de ' + qz.total + ' correctas' : 'pendiente') + '</b>' +
-        (di.requiereProtocolo ? ' · Protocolo: <b>' + (di.protocolo ? 'leído' : 'pendiente') + '</b>' : '') + '</div>' +
+        (di.requiereProtocolo ? ' · Protocolo: <b>' + (di.protocolo ? 'leído' : 'pendiente') + '</b>' : '') + ' · Compromiso de integridad: <b>' + (di.compromiso ? 'firmado ' + fechaCorta(di.compromiso.firmadoEn) : 'pendiente') + '</b></div>' +
+        ((r.docs.induccion.archivos || []).length ? '<div class="archivos">' + r.docs.induccion.archivos.map(function (a) { return '<button class="btn sm" data-ver="' + a.fileId + '">👁 ' + esc(a.nombre) + '</button>'; }).join('') + '</div>' : '') +
         (di.completo ? '<div class="aviso ok" style="margin-top:10px">Inducción completada.</div>' : '') + '<p class="tiny muted">La inducción no confirma la contratación.</p></div>';
     }
 

@@ -120,3 +120,24 @@ var QUIZ_LB = [
   { id: 'alitas', q: '¿Cuál de estas salsas puede elegir para las alitas?', o: ['Salsa de chocolate', 'Salsa de fresa', 'Honey Mustard'], c: 2, e: 'Las salsas de las alitas son Honey Mustard, Buffalo y BBQ.' }
 ];
 var MENU_LB = ['labarra/menu-1.jpg', 'labarra/menu-2.jpg'];
+
+/* Cuestionario corto: 7 preguntas por candidato. Siempre las de integridad y presentación; las demás al azar
+   (fijas para cada candidato, según su enlace, para que no cambien al recargar). */
+var QUIZ_FIJAS = ['propina', 'verdad', 'chancletas'], QUIZ_TOTAL = 7;
+function quizDe(semilla) {
+  var h = 2166136261; String(semilla || '').split('').forEach(function (ch) { h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; });
+  function azar() { h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; h = Math.imul(h ^ (h >>> 13), 3266489909) >>> 0; return ((h ^= h >>> 16) >>> 0) / 4294967296; }
+  var resto = QUIZ_LB.filter(function (q) { return QUIZ_FIJAS.indexOf(q.id) < 0; });
+  for (var i = resto.length - 1; i > 0; i--) { var j = Math.floor(azar() * (i + 1)), t = resto[i]; resto[i] = resto[j]; resto[j] = t; }
+  var ids = QUIZ_FIJAS.concat(resto.slice(0, QUIZ_TOTAL - QUIZ_FIJAS.length).map(function (q) { return q.id; }));
+  return QUIZ_LB.filter(function (q) { return ids.indexOf(q.id) >= 0; });
+}
+
+/* Compromiso de integridad (se firma al final de la inducción) */
+var COMPROMISO_LB = [
+  'No tomaré dinero, comida ni productos de la empresa.',
+  'La propina es colectiva: no me quedaré con ninguna propina.',
+  'No le mentiré al cliente. Si me equivoco, diré la verdad y pediré apoyo a mi líder.',
+  'Vendré siempre bien presentado/a, con el uniforme limpio y sin chancletas.',
+  'Cuidaré la higiene de los alimentos, de la tienda y de los baños.'
+];

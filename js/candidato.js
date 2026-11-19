@@ -18,7 +18,7 @@
   function marca() {
     var e = emp(), c = cli();
     if (c.marca) {
-      $('.marca').innerHTML = '<div class="logo" style="background:' + c.colores.pri + '">' + esc(e.logo) + '</div><div>' + esc(e.nombre) + '<small>' + esc(e.razon) + ' · Recursos Humanos</small></div>';
+      $('.marca').innerHTML = '<div class="logo" style="background:' + c.colores.pri + '">' + esc(e.logo) + '</div><div>' + esc(e.nombre) + '<small>Recursos Humanos</small></div>';
       $('#chipCli').innerHTML = ''; document.title = 'Completar expediente · ' + e.nombre;
     } else $('#chipCli').innerHTML = chipCliente(V.cliente);
   }
@@ -122,7 +122,7 @@
 
   function induccionHtml(d) {
     var mods = modulosLaBarra(V), di = d.datos || {}, leidos = di.leidos || [], quiz = di.quiz, cl = cli();
-    var h = '<p class="small">Son temas cortos, con ejemplos. Lea cada uno (o toque <b>🔊 Escuchar</b> y se lo leemos) y toque <b>Ya lo leí</b>. Al final vea el menú y responda ' + QUIZ_LB.length + ' preguntas fáciles.</p>' +
+    var h = '<p class="small">Son temas cortos, con ejemplos. Lea cada uno (o toque <b>🔊 Escuchar</b> y se lo leemos) y toque <b>Ya lo leí</b>. Al final vea el menú y responda ' + QUIZ_TOTAL + ' preguntas fáciles. Para terminar, firme su compromiso de integridad.</p>' +
       '<div class="aviso">' + leidos.length + ' de ' + mods.length + ' temas leídos · Cuestionario: ' + (quiz ? quiz.correctas + ' de ' + quiz.total + ' correctas' : 'pendiente') + '</div>';
     mods.forEach(function (m, i) {
       var ok = leidos.indexOf(m.id) >= 0;
@@ -138,17 +138,23 @@
     });
     h += '<div class="card flat" style="padding:14px 16px"><b>Nuestro menú</b><p class="small muted">Toque una imagen para verla grande.</p><div class="grid g2">' +
       MENU_LB.map(function (u) { return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="Menú La Barra" style="width:100%;border-radius:10px;border:1px solid var(--linea)"></a>'; }).join('') + '</div>';
+    var QZ = quizDe(token);
     if (quiz && !d._repetirQuiz) {
-      h += '<h3 style="margin-top:14px">Sus respuestas: ' + quiz.correctas + ' de ' + quiz.total + '</h3>' + QUIZ_LB.map(function (q) {
+      h += '<h3 style="margin-top:14px">Sus respuestas: ' + quiz.correctas + ' de ' + quiz.total + '</h3>' + QUIZ_LB.filter(function (q) { return quiz.respuestas[q.id] != null; }).map(function (q) {
         var r = quiz.respuestas[q.id], bien = r === q.c;
         return '<div class="small" style="margin:6px 0"><b>' + (bien ? '✓' : '✗') + ' ' + esc(q.q) + '</b><br>' + (bien ? '' : 'Correcta: ' + esc(q.o[q.c]) + '. ') + '<span class="muted">' + esc(q.e) + '</span></div>';
       }).join('') + '<button class="btn sm" data-repetirquiz>Responder otra vez</button>';
     } else {
-      h += '<h3 style="margin-top:14px">Preguntas</h3>' + QUIZ_LB.map(function (q, i) {
+      h += '<h3 style="margin-top:14px">Preguntas</h3>' + QZ.map(function (q, i) {
         return '<div class="campo"><label>' + (i + 1) + '. ' + esc(q.q) + '</label><div class="radios" style="flex-direction:column;gap:6px">' + q.o.map(function (o, j) { return '<label><input type="radio" name="q_' + q.id + '" value="' + j + '"> ' + esc(o) + '</label>'; }).join('') + '</div></div>';
       }).join('') + '<button class="btn pri" data-enviarquiz>Enviar respuestas</button>';
     }
     h += '</div>';
+    h += di.compromiso ? '<div class="aviso ok" style="margin-top:10px">🤝 Compromiso de integridad firmado el ' + esc(fechaCorta(di.compromiso.firmadoEn)) + '. ¡Gracias!</div>' :
+      '<div class="card flat" style="padding:14px 16px;margin-top:10px;border:2px solid var(--azul)"><b>🤝 Mi compromiso de integridad</b><p class="small muted">Para terminar la inducción, léalo, marque la casilla y firme con su dedo.</p><ul class="small">' +
+      COMPROMISO_LB.map(function (x) { return '<li style="margin:4px 0">' + esc(x) + '</li>'; }).join('') + '</ul>' +
+      '<form data-form="compromiso"><label class="check"><input type="checkbox" name="acepto"> Me comprometo con la integridad de ' + esc(emp().nombre) + '. Entiendo que si no cumplo, no puede haber una relación laboral.</label><div style="height:10px"></div><div class="firma-box"></div></form>' +
+      '<button class="btn pri block" data-firmarcompromiso style="margin-top:8px">Firmar mi compromiso</button></div>';
     if (cl.protocoloUrl) h += '<div class="card flat" style="padding:14px 16px;margin-top:10px"><b>Protocolo de servicio</b><p class="small"><a href="' + esc(cl.protocoloUrl) + '" target="_blank" rel="noopener">Abrir el protocolo ↗</a></p>' +
       (di.protocolo ? '<span class="pill ok">Confirmado</span>' : '<label class="check"><input type="checkbox" data-protocolo> Leí el protocolo de servicio.</label>') + '</div>';
     h += '<p class="tiny muted" style="margin-top:10px">Completar la inducción no confirma su contratación.</p>';
@@ -246,7 +252,7 @@
       if (!V.lab.listo) return '<div class="aviso pend">Estamos preparando su evaluación pre empleo. Le avisaremos por WhatsApp. <b>Cuando le avisemos, vaya cuanto antes</b>: sin esta evaluación no podemos enviar su expediente. Mientras tanto, siga con los demás pasos.</div>';
       return '<div class="aviso">Su evaluación pre empleo está lista. Vaya cuanto antes.</div>' +
         (V.lab.referimiento ? '<p><button class="btn pri block lg" data-bajarref>⬇ Descargar mi referimiento</button></p><p class="tiny muted" style="text-align:center;margin-top:-6px">Muéstrelo en su celular o impreso, junto con su cédula.</p>' : '') +
-        '<ol class="small">' + (V.lab.referimiento ? '<li>Descargue su <b>referimiento</b> con el botón de arriba.</li>' : '') + '<li>Vaya a <b>Laboratorios Referencia</b> con su <b>cédula</b>' + (V.lab.referimiento ? ' y el referimiento' : '') + '.</li><li>Diga que va de parte de <b>' + esc(emp().nombre) + (c.directo ? ' (' + esc(emp().razon) + ')' : '') + '</b>.</li><li>Es una evaluación pre empleo para confirmar que está apto/a para trabajar.</li><li><b>No tiene que pagar nada.</b></li></ol>' +
+        '<ol class="small">' + (V.lab.referimiento ? '<li>Descargue su <b>referimiento</b> con el botón de arriba.</li>' : '') + '<li>Vaya a <b>Laboratorios Referencia</b> con su <b>cédula</b>' + (V.lab.referimiento ? ' y el referimiento' : '') + '.</li><li>Diga que va de parte de <b>' + esc(emp().nombre) + (c.directo && V.tienda ? ' (' + esc(V.tienda) + ')' : '') + '</b>.</li><li>Es una evaluación pre empleo para confirmar que está apto/a para trabajar.</li><li><b>No tiene que pagar nada.</b></li></ol>' +
         '<div class="grid g2" style="align-items:end"><div class="campo"><label>¿Qué día fue?</label><input type="date" id="labfecha" value="' + new Date().toISOString().slice(0, 10) + '"></div><div class="campo"><button class="btn pri block" data-labok>Ya me realicé la evaluación</button></div></div>';
     }
     if (doc.tipo === 'referencia') {
@@ -368,12 +374,24 @@
       speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(textoModulo(m)); u.lang = 'es-ES'; u.rate = 0.95; speechSynthesis.speak(u);
     }; });
     var eq = $('[data-enviarquiz]', paso); if (eq) eq.onclick = function () {
-      var resp = {}, falt = 0, ok = 0;
-      QUIZ_LB.forEach(function (q) { var r = $('input[name="q_' + q.id + '"]:checked', paso); if (!r) falt++; else { resp[q.id] = +r.value; if (+r.value === q.c) ok++; } });
-      if (falt) return toast('Responda las ' + QUIZ_LB.length + ' preguntas', 'mal');
-      d._repetirQuiz = false; guardarInduccion({ quiz: { respuestas: resp, correctas: ok, total: QUIZ_LB.length } });
+      var resp = {}, falt = 0, ok = 0, QZ = quizDe(token);
+      QZ.forEach(function (q) { var r = $('input[name="q_' + q.id + '"]:checked', paso); if (!r) falt++; else { resp[q.id] = +r.value; if (+r.value === q.c) ok++; } });
+      if (falt) return toast('Responda las ' + QZ.length + ' preguntas', 'mal');
+      d._repetirQuiz = false; guardarInduccion({ quiz: { respuestas: resp, correctas: ok, total: QZ.length } });
     };
     var rq = $('[data-repetirquiz]', paso); if (rq) rq.onclick = function () { d._repetirQuiz = true; pintar(); };
+    var fc = $('form[data-form=compromiso]', paso), padC = fc ? padFirma($('.firma-box', fc)) : null;
+    var bfc = $('[data-firmarcompromiso]', paso); if (bfc) bfc.onclick = async function () {
+      if (!$('[name=acepto]', fc).checked) return toast('Marque la casilla de compromiso', 'mal');
+      if (padC.vacia()) return toast('Falta su firma', 'mal');
+      bfc.disabled = true; var meta = metaFirma({ nombre: V.nombre, compromiso: COMPROMISO_LB });
+      try {
+        var bytes = await pdfCompromiso(V, cli(), padC.png(), meta);
+        V = await API.call('cand.subir', { token: token, doc: 'induccion', reemplazar: true, archivos: [{ nombre: 'Compromiso de integridad - firmado.pdf', mime: 'application/pdf', b64: bytesAB64(bytes) }],
+          datos: { compromiso: { codigo: meta.codigo, firmadoEn: meta.fecha, dispositivo: meta.dispositivo } } });
+        pintar(); toast(V.docs.induccion.hecho ? '¡Inducción completada!' : 'Compromiso firmado', 'ok');
+      } catch (e) { bfc.disabled = false; toast(e.message, 'mal'); }
+    };
     var pc = $('[data-protocolo]', paso); if (pc) pc.onchange = function () { if (pc.checked) guardarInduccion({ protocolo: true }); };
 
     var form = $('form[data-form]:not([data-form=datos])', paso);

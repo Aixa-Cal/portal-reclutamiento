@@ -156,7 +156,7 @@ function htmlDatos(V, x) {
     '<label><input type="radio" name="salud" value="no"' + (x.salud === 'no' ? ' checked' : '') + '> No</label><label><input type="radio" name="salud" value="si"' + (x.salud === 'si' ? ' checked' : '') + '> Sí</label></div></div>' +
     '<div class="campo' + (x.salud === 'si' ? '' : ' hidden') + '" data-si="salud"><label>¿Cuál? *</label><textarea name="saludDetalle" rows="2">' + v('saludDetalle') + '</textarea></div>' +
     '<p class="tiny muted">Esta respuesta solo la ve Recursos Humanos.</p></fieldset>' +
-    '<label class="check"><input type="checkbox" name="consentimiento"' + (x.consentimiento ? ' checked' : '') + '> Autorizo a ' + esc(emp.nombre || '') + ' (' + esc(emp.razon || '') + ') a usar mis datos solo para mi proceso de ingreso y mi expediente laboral.</label>' +
+    '<label class="check"><input type="checkbox" name="consentimiento"' + (x.consentimiento ? ' checked' : '') + '> Autorizo a ' + esc(emp.nombre || '') + ' a usar mis datos solo para mi proceso de ingreso y mi expediente laboral.</label>' +
     '<button type="button" class="btn pri block lg" data-guardardatos style="margin-top:12px">Guardar mis datos</button></form>';
 }
 
@@ -165,7 +165,7 @@ function htmlDeclaracionLB(cli, nombre) {
   var emp = cli.marca || {};
   return '<form data-form="declaracion">' +
     '<div class="grid g2">' + inp('nombre', 'Su nombre completo', { req: 1, val: nombre }) + inp('cedula', 'Su cédula', { req: 1 }) + '</div>' +
-    '<fieldset><legend>1. Familiares en la empresa</legend>' + radioSN('p2', '¿Tiene familiares trabajando en ' + (emp.nombre || cli.nombre) + ' (' + (emp.razon || cli.razon) + ')?', true) +
+    '<fieldset><legend>1. Familiares en la empresa</legend>' + radioSN('p2', '¿Tiene familiares trabajando en ' + (emp.nombre || cli.nombre) + ' (en cualquier tienda, el Car Wash o el Food Shop)?', true) +
     '<div data-si="p2" class="hidden">' + repetible('p2filas', [{ k: 'nombre', label: 'Nombre' }, { k: 'relacion', label: 'Parentesco' }, { k: 'cedula', label: 'Cédula' }, { k: 'entidad', label: 'Tienda o área' }], { item: 'familiar' }) + '</div></fieldset>' +
     '<fieldset><legend>2. Otras actividades</legend>' + radioSN('p3', '¿Trabaja en otro lugar o tiene otra actividad profesional o negocio propio?', true) +
     '<div data-si="p3" class="hidden">' + repetible('p3filas', [{ k: 'entidad', label: 'Empresa o actividad' }, { k: 'relacion', label: 'Su relación' }, { k: 'cargo', label: 'Su cargo' }], { item: 'actividad' }) + '</div></fieldset>' +

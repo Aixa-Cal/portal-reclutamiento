@@ -37,12 +37,12 @@ var CLIENTES = {
   labarra: {
     id: 'labarra',
     nombre: 'Grupo La Barra',
-    razon: 'Inversiones BA AR, S.R.L.',
+    razon: 'Grupo La Barra', // la razón social (Inversiones BA AR / Zare / Nakamoto) solo va en la carta de nómina
     directo: true, // contratación directa (no subcontratación)
     diaLibreTrasDias: 15, // a los 15 días de entrenamiento el líder asigna el día libre
     turnos: ['Mañana · 7:00 a. m. a 3:00 p. m.', 'Tarde · 3:00 p. m. a 11:00 p. m.', 'Noche · 11:00 p. m. a 7:00 a. m.', 'Rotativo'],
     pagina: 'lb.html', // página propia: el enlace por WhatsApp muestra Grupo La Barra
-    marca: { nombre: 'Grupo La Barra', razon: 'Inversiones BA AR, S.R.L.', logo: 'LB', firmaRRHH: 'RRHH – Grupo La Barra' },
+    marca: { nombre: 'Grupo La Barra', razon: 'Grupo La Barra', logo: 'LB', firmaRRHH: 'RRHH – Grupo La Barra' },
     colores: { pri: '#C91017', osc: '#981017', suave: '#FFF0F0' },
     firma: 'digital',
     formDeclaracion: 'labarra',
@@ -325,7 +325,15 @@ function exigirAbierto(rec) { if (rec.estado !== 'activo') throw new Error('Este
 function aplicarSubida(rec, docId, archivos, datos, reemplazar, porAdmin) {
   if (!porAdmin) exigirAbierto(rec);
   asegurarDocs(rec);
-  var def = docDe(rec, docId) || docPorId(docId); if (!def || ['laboratorio', 'referencia', 'datos', 'induccion'].indexOf(def.tipo) >= 0) throw new Error('Paso no válido');
+  var def = docDe(rec, docId) || docPorId(docId);
+  if (def && def.tipo === 'induccion' && datos && datos.compromiso) {
+    /* Compromiso de integridad firmado: PDF dentro del paso de inducción */
+    var dI = rec.docs[docId], di = dI.datos || {};
+    dI.archivos = archivos; di.compromiso = { codigo: datos.compromiso.codigo || '', firmadoEn: datos.compromiso.firmadoEn || ahoraISO(), dispositivo: datos.compromiso.dispositivo || '' };
+    if (di.modulosTotal && (di.leidos || []).length >= di.modulosTotal && di.quiz && (!di.requiereProtocolo || di.protocolo) && !di.completo) { di.completo = true; registrar(rec, 'Candidato completó la inducción'); }
+    dI.datos = di; dI.actualizado = ahoraISO(); registrar(rec, 'Candidato firmó el compromiso de integridad'); return;
+  }
+  if (!def || ['laboratorio', 'referencia', 'datos', 'induccion'].indexOf(def.tipo) >= 0) throw new Error('Paso no válido');
   var d = rec.docs[docId];
   if (def.lados && archivos.length && archivos[0].lado) {
     var nuevos = archivos.map(function (a) { return a.lado; });
@@ -364,7 +372,7 @@ function aplicarDatos(rec, docId, datos) {
     if (datos.quiz) { di.quiz = { respuestas: datos.quiz.respuestas || {}, correctas: Number(datos.quiz.correctas || 0), total: Number(datos.quiz.total || 0), en: ahoraISO() }; registrar(rec, 'Candidato respondió el cuestionario de inducción: ' + di.quiz.correctas + '/' + di.quiz.total); }
     if (datos.protocolo) di.protocolo = ahoraISO();
     var modTotal = Number(datos.modulosTotal || di.modulosTotal || 0); if (modTotal) di.modulosTotal = modTotal;
-    var listo = di.modulosTotal && di.leidos.length >= di.modulosTotal && di.quiz && (!datos.requiereProtocolo && !di.requiereProtocolo || di.protocolo);
+    var listo = di.modulosTotal && di.leidos.length >= di.modulosTotal && di.quiz && di.compromiso && (!datos.requiereProtocolo && !di.requiereProtocolo || di.protocolo);
     if (datos.requiereProtocolo) di.requiereProtocolo = true;
     if (listo && !di.completo) { di.completo = true; registrar(rec, 'Candidato completó la inducción'); }
     d.datos = di; d.actualizado = ahoraISO(); rec.actualizado = ahoraISO();
