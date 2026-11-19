@@ -23,6 +23,11 @@
   function copiar(t) { navigator.clipboard.writeText(t).then(function () { toast('Copiado', 'ok'); }, function () { prompt('Copie:', t); }); }
 
   function fechaLimite(rec) { return new Date(venceEn(rec)).toLocaleString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }); }
+  /* Grupo La Barra: si no tenemos el correo, se pide en el mensaje para enviar las evaluaciones psicométricas */
+  function pideCorreo(rec) {
+    var dd = (rec.docs.datos && rec.docs.datos.datos) || {};
+    return CLIENTES[rec.cliente].directo && !rec.correo && !dd.correo ? '*Importante:* responda este mensaje con su *correo electrónico*. Lo necesitamos para enviarle sus *evaluaciones psicométricas*.\n\n' : '';
+  }
   function msgInvitacion(rec) {
     var c = CLIENTES[rec.cliente], cedOk = pasoHecho(rec, 'cedula'), labOk = !!rec.lab.referimiento, ev = rec.evaluacion || {};
     var pasos = [], E = empleador(rec.cliente);
@@ -39,7 +44,7 @@
       '*Empiece por aquí:*\n' + pasos.join('\n') + '\n\n' +
       'Después suba los demás documentos que le pide el enlace.\n\n' +
       '*Plazo: ' + EMPRESA.plazoDias + ' días* (hasta el ' + fechaLimite(rec) + ').\n' +
-      'Mientras antes lo complete, más rápido avanzamos con su posible fecha de ingreso.\n\n' +
+      'Mientras antes lo complete, más rápido avanzamos con su posible fecha de ingreso.\n\n' + pideCorreo(rec) +
       '¿Tiene dudas? Responda a este mensaje.\n\n' + E.firmaRRHH;
   }
   function msgRecordatorio(rec) {
@@ -54,7 +59,7 @@
       'Le recordamos completar su expediente para *' + CLIENTES[rec.cliente].nombre + '*.\n\n' +
       (falta.length ? '*Le falta:*\n' + falta.join('\n') + '\n\n' : '') +
       '*Su enlace:*\n' + enlace(rec) + '\n\n' +
-      '*Su plazo vence el* ' + fechaLimite(rec) + '\n\n' + empleador(rec.cliente).firmaRRHH;
+      '*Su plazo vence el* ' + fechaLimite(rec) + '\n\n' + pideCorreo(rec) + empleador(rec.cliente).firmaRRHH;
   }
   function msgLab(rec) {
     var p = numeroPaso(rec, 'laboratorio');
