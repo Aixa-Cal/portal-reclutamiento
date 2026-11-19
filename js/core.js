@@ -36,10 +36,11 @@ var CLIENTES = {
   },
   labarra: {
     id: 'labarra',
-    nombre: 'La Barra',
+    nombre: 'Grupo La Barra',
     razon: 'Inversiones BA AR, S.R.L.',
     directo: true, // contratación directa (no subcontratación)
-    marca: { nombre: 'La Barra', razon: 'Inversiones BA AR, S.R.L.', logo: 'LB', firmaRRHH: 'RRHH – La Barra (Inversiones BA AR, S.R.L.)' },
+    pagina: 'lb.html', // página propia: el enlace por WhatsApp muestra Grupo La Barra
+    marca: { nombre: 'Grupo La Barra', razon: 'Inversiones BA AR, S.R.L.', logo: 'LB', firmaRRHH: 'RRHH – Grupo La Barra' },
     colores: { pri: '#C91017', osc: '#981017', suave: '#FFF0F0' },
     firma: 'digital',
     formDeclaracion: 'labarra',

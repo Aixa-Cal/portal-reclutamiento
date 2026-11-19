@@ -5,7 +5,14 @@
   if (API.demo) $('#demo').classList.remove('hidden');
 
   function call(a, p) { return API.call(a, Object.assign({ key: KEY }, p || {})); }
-  function enlace(rec) { return new URL('c.html?t=' + rec.token, location.href.split('?')[0].replace(/index\.html$/, '')).href; }
+  var MARCA0 = null;
+  function temaAdmin(id) {
+    aplicarTema(id); var m = document.querySelector('.topbar .marca'); if (!m) return;
+    if (MARCA0 === null) MARCA0 = m.innerHTML;
+    var c = CLIENTES[id];
+    m.innerHTML = c && c.marca ? '<div class="logo" style="background:' + c.colores.pri + '">' + esc(c.marca.logo) + '</div><div>' + esc(c.marca.nombre) + '<small>Reclutamiento · RRHH</small></div>' : MARCA0;
+  }
+  function enlace(rec) { return new URL(((CLIENTES[rec.cliente] || {}).pagina || 'c.html') + '?t=' + rec.token, location.href.split('?')[0].replace(/index\.html$/, '')).href; }
   function telWa(t) { var d = String(t || '').replace(/\D/g, ''); if (d.length === 10) d = '1' + d; return d; }
   function primer(n) { return String(n || '').split(' ')[0]; }
   /* En computadora se abre WhatsApp Web (respeta saltos de línea); en el celular, la app. */
@@ -88,6 +95,7 @@
   function pillEtapa(e) { var m = { enlace: 'gris', completando: '', depuracion: 'pend', listo: 'ok', enviado_cliente: 'ok', descartado: 'mal' }; return '<span class="pill ' + (m[e.clave] || '') + '">' + esc(e.texto) + '</span>'; }
 
   async function vistaLista(sinRecargar) {
+    temaAdmin(null);
     if (!sinRecargar) { app.innerHTML = '<div class="vacio">Cargando…</div>'; try { await recargar(); } catch (e) { if (/Clave/.test(e.message)) return login(); toast(e.message, 'mal'); } }
     var ahora = new Date(), act = LISTA.filter(function (r) { return r.estado !== 'descartado' && r.estado !== 'enviado_cliente'; });
     var k = { act: act.length, comp: act.filter(function (r) { return r.etapa.clave === 'enlace' || r.etapa.clave === 'completando'; }).length,
@@ -145,7 +153,7 @@
       $('#lbCampos').classList.toggle('hidden', !c.tiendas); $('#cContrato').classList.toggle('hidden', !!c.directo);
       $('#n_puestos').innerHTML = (c.puestos || []).map(function (p) { return '<option value="' + esc(p.nombre) + '">'; }).join('');
       $('#n_tienda').innerHTML = c.tiendas ? '<option value="">Elija…</option>' + c.tiendas.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') : '';
-      puesto(); aplicarTema(c.id);
+      puesto(); temaAdmin(c.id);
     }
     function puesto() {
       var c = CLIENTES[$('#n_cliente').value], p = (c.puestos || []).filter(function (x) { return x.nombre === $('#n_posicion').value; })[0];
@@ -206,6 +214,7 @@
   }
 
   function pintarDetalle() {
+    temaAdmin(REC.cliente);
     var r = REC, c = CLIENTES[r.cliente], dep = depuracion(r), et = etapa(r), p = progreso(r);
     function sem(v, t, sub) { return '<div class="sem ' + (v === 'ok' ? 'ok' : v === 'mal' ? 'mal' : 'pend') + '"><b>' + t + '</b>' + (v === 'ok' ? 'Completo' : v === 'mal' ? 'Con observación' : 'Pendiente') + (sub ? '<div class="tiny muted">' + sub + '</div>' : '') + '</div>'; }
     var refs = ((r.docs.referencia.datos || {}).refs || []);
@@ -360,7 +369,7 @@
       var v = this.value; if (v === 'listo' && !depuracion(r).listo && !confirm('La depuración no está completa. ¿Marcar como listo de todas formas?')) { this.value = r.estado; return; }
       cambiar([['estado', v]], 'Estado actualizado');
     };
-    $('#cpLab').onclick = function () { copiar('Nombre: ' + r.nombre + '\nCédula: ' + r.cedula + '\nEmpresa: ' + EMPRESA.razon + '\nPrueba: ' + r.lab.prueba); };
+    $('#cpLab').onclick = function () { copiar('Nombre: ' + r.nombre + '\nCédula: ' + r.cedula + '\nEmpresa: ' + (CLIENTES[r.cliente].directo ? empleador(r.cliente).razon : EMPRESA.razon) + '\nPrueba: ' + r.lab.prueba); };
     var lr = $('#labRef'); if (lr) lr.onclick = function () { cambiar([['lab.referimiento', true]], 'Referimiento marcado. Avísele por WhatsApp.'); };
     async function subirLab(input, campo) {
       var f = input.files[0]; if (!f) return; toast('Subiendo…');
