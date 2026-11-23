@@ -200,6 +200,17 @@ function dibujarReferencia(z, rec) {
       z.seccion('Supervisor ' + (k + 1)); z.campos([['Nombre', r.nombre], ['Cargo', r.cargo], ['Empresa', r.empresa], ['Teléfono', r.telefono]], 2); });
     return;
   }
+  if (F.tipo === 'personal') {
+    z.seccion('Datos de la referencia');
+    z.campos([['Nombre', F.suministrado], ['Teléfono', F.telefono], ['Relación con el candidato', F.relacion], ['Lo conoce desde', F.conoceDesde], ['Ocupación', F.ocupacion], ['¿Es familiar?', F.familiar || 'No']], 2);
+    z.seccion('¿Cómo es el candidato?');
+    z.tabla(['Aspecto'].concat(NIVELES_PERS), ASPECTOS_PERS.map(function (a) { return [a].concat(NIVELES_PERS.map(function (n) { return (F.calif || {})[a] === n ? 'X' : ''; })); }), [0.36, 0.16, 0.16, 0.16, 0.16]);
+    z.campos([['¿Lo recomendaría para trabajar?', F.recontratar], ['Comentarios', F.comentarios]], 1);
+    z.seccion('Validación');
+    z.campos([['Fecha', F.fecha], ['Resultado', { positiva: 'Positiva', negativa: 'Negativa', no_localizable: 'No localizable' }[rec.referencia.resultado] || 'Pendiente'],
+      ['Verificado por', (F.verificadoPor || '') + ' – ' + empleador(rec.cliente).firmaRRHH], ['Medio', 'Llamada telefónica']], 2);
+    return;
+  }
   z.seccion('Datos del empleo');
   z.campos([['Empresa', F.empresa], ['Teléfono', F.telefono], ['Período laborado', F.periodo], ['Supervisor', F.supervisor], ['Posición que ocupó', F.posicion], ['Último salario', F.salario]], 3);
   z.seccion('Evaluación');
@@ -211,7 +222,7 @@ function dibujarReferencia(z, rec) {
     ['Verificado por', (F.verificadoPor || '') + ' – ' + empleador(rec.cliente).firmaRRHH], ['Medio', 'Llamada telefónica']], 3);
 }
 async function pdfReferencia(rec) {
-  var z = await nuevoLienzo(CLIENTES[rec.cliente].colores.pri, empleador(rec.cliente).nombre); z.pie = 'Referencia laboral · ' + rec.nombre + ' · ' + empleador(rec.cliente).razon;
+  var z = await nuevoLienzo(CLIENTES[rec.cliente].colores.pri, empleador(rec.cliente).nombre); z.pie = ((rec.docs.referencia.datos || {}).primerEmpleo ? 'Referencia personal · ' : 'Referencia laboral · ') + rec.nombre + ' · ' + empleador(rec.cliente).razon;
   dibujarReferencia(z, rec); return await z.doc.save();
 }
 

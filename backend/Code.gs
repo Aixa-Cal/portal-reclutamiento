@@ -640,6 +640,10 @@ function enviarExpediente(rec) {
 
 var ASPECTOS_REF = ['Puntualidad', 'Responsabilidad', 'Calidad del trabajo', 'Comportamiento', 'Trabajo en equipo', 'Confiabilidad', 'Servicio / trato al cliente', 'Iniciativa'];
 var NIVELES_REF = ['Excelente', 'Muy bueno', 'Bueno', 'Aceptable', 'Deficiente'];
+/* Referencia personal (primer empleo): más corta. No puede ser familiar. */
+var ASPECTOS_PERS = ['Responsabilidad', 'Honestidad', 'Puntualidad', 'Trato con las personas'];
+var NIVELES_PERS = ['Excelente', 'Bueno', 'Regular', 'Malo'];
+var RELACIONES_PERS = ['Amigo/a', 'Compañero/a de estudio', 'Vecino/a', 'Profesor/a', 'Otro (no familiar)'];
 
 /* Cambios del administrador: rutas permitidas */
 var RUTAS_ADMIN = /^(tienda|turno|lider|liderTelefono|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco|tss|nomina|ponche|uniforme|cartaNomina)|psico\.(enviada|completada)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;

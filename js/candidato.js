@@ -263,7 +263,7 @@
         var rp = function (i) { var x = refs[i] || {}, req = i ? '' : ' *';
           function f(k, l, t, ph) { return '<div class="campo"><label>' + l + req + '</label><input' + (t ? ' type="' + t + '"' : '') + (ph ? ' placeholder="' + ph + '"' : '') + ' data-ref="' + i + '" data-k="' + k + '" value="' + esc(x[k] || '') + '"></div>'; }
           return '<fieldset><legend>' + (i ? 'Otra referencia personal (opcional)' : 'Referencia personal') + '</legend><div class="grid g2">' + f('nombre', 'Nombre completo') + f('telefono', 'Teléfono', 'tel') +
-            f('relacion', '¿Qué es de usted?', '', 'Ej.: vecino, profesor, pastor') + '<div class="campo"><label>Ocupación</label><input data-ref="' + i + '" data-k="ocupacion" value="' + esc(x.ocupacion || '') + '"></div></div></fieldset>'; };
+            f('relacion', '¿Qué es de usted?', '', 'Ej.: amigo, compañero de estudio, vecino') + '<div class="campo"><label>Ocupación</label><input data-ref="' + i + '" data-k="ocupacion" value="' + esc(x.ocupacion || '') + '"></div></div></fieldset>'; };
         return '<p class="small"><b>Hágalo primero.</b></p>' + sel + '<p class="small">Como es su primer empleo, escriba una <b>persona que le conozca</b> y pueda dar referencia de usted. <b>No puede ser un familiar.</b> Nosotros la llamaremos.</p>' + rp(0) + rp(1) + '<button class="btn pri" data-guardarref data-primer="1">Guardar</button>';
       }
       function r(i) { var x = refs[i] || {}, req = i ? '' : ' *';
