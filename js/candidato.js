@@ -248,9 +248,10 @@
       return h;
     }
     if (doc.tipo === 'laboratorio') {
-      if (V.lab.asistio) return '<div class="aviso ok">Evaluación realizada el ' + esc(V.lab.fechaAsistencia) + '. Nosotros recibiremos el resultado directamente.</div>';
-      if (!V.lab.listo) return '<div class="aviso pend">Estamos preparando su evaluación pre empleo. Le avisaremos por WhatsApp. <b>Cuando le avisemos, vaya cuanto antes</b>: sin esta evaluación no podemos enviar su expediente. Mientras tanto, siga con los demás pasos.</div>';
-      return '<div class="aviso">Su evaluación pre empleo está lista. Vaya cuanto antes.</div>' +
+      var logoLab = '<div style="text-align:center;margin:2px 0 12px"><img src="logo-referencia.png" alt="Referencia Laboratorio Clínico" style="max-width:240px;width:70%;height:auto"></div>';
+      if (V.lab.asistio) return logoLab + '<div class="aviso ok">Evaluación realizada el ' + esc(V.lab.fechaAsistencia) + '. Nosotros recibiremos el resultado directamente.</div>';
+      if (!V.lab.listo) return logoLab + '<div class="aviso pend">Estamos preparando su evaluación pre empleo. Le avisaremos por WhatsApp. <b>Cuando le avisemos, vaya cuanto antes</b>: sin esta evaluación no podemos enviar su expediente. Mientras tanto, siga con los demás pasos.</div>';
+      return logoLab + '<div class="aviso">Su evaluación pre empleo está lista. Vaya cuanto antes.</div>' +
         (V.lab.referimiento ? '<p><button class="btn pri block lg" data-bajarref>⬇ Descargar mi referimiento</button></p><p class="tiny muted" style="text-align:center;margin-top:-6px">Muéstrelo en su celular o impreso, junto con su cédula.</p>' : '') +
         '<ol class="small">' + (V.lab.referimiento ? '<li>Descargue su <b>referimiento</b> con el botón de arriba.</li>' : '') + '<li>Vaya a <b>Laboratorios Referencia</b> con su <b>cédula</b>' + (V.lab.referimiento ? ' y el referimiento' : '') + '.</li><li>Diga que va de parte de <b>' + esc(emp().nombre) + (c.directo && V.tienda ? ' (' + esc(V.tienda) + ')' : '') + '</b>.</li><li>Es una evaluación pre empleo para confirmar que está apto/a para trabajar.</li><li><b>No tiene que pagar nada.</b></li></ol>' +
         '<div class="grid g2" style="align-items:end"><div class="campo"><label>¿Qué día fue?</label><input type="date" id="labfecha" value="' + new Date().toISOString().slice(0, 10) + '"></div><div class="campo"><button class="btn pri block" data-labok>Ya me realicé la evaluación</button></div></div>';
