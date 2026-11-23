@@ -142,6 +142,7 @@
     var ops = Object.keys(CLIENTES).map(function (id) { return '<option value="' + id + '">' + esc(CLIENTES[id].nombre) + ' — firma ' + CLIENTES[id].firma + '</option>'; }).join('');
     app.innerHTML = '<div class="nuevo-grid"><div class="card nuevo-form"><h2>Nuevo candidato</h2><p class="muted small">Se crea el expediente y un enlace único para enviárselo por WhatsApp.</p>' +
       '<div class="campo"><label>1. Cédula del candidato (foto o PDF, opcional)</label><input type="file" id="n_cedfile" accept="image/*,application/pdf" multiple><div class="tiny muted" style="margin-top:4px">Súbala primero: se ve al lado para copiar los datos, y el candidato ya no tiene que subirla.</div></div>' +
+      '<div class="campo"><label>2. Referimiento del laboratorio (opcional)</label><input type="file" id="n_reffile" accept="application/pdf,image/*"><div class="tiny muted" style="margin-top:4px">Si ya lo generó, súbalo aquí: el candidato lo descarga desde su enlace para llevarlo al laboratorio.</div></div>' +
       '<div class="grid g2"><div class="campo"><label>Empresa</label><select id="n_cliente">' + ops + '</select></div><div class="campo"><label>Posición</label><input id="n_posicion" list="n_puestos"><datalist id="n_puestos"></datalist></div></div>' +
       '<div class="grid g3 hidden" id="lbCampos"><div class="campo"><label>Tienda *</label><select id="n_tienda"></select></div><div class="campo"><label>Propina mensual (RD$)</label><input id="n_propina"></div><div class="campo"><label>Propina después de 3 meses</label><input id="n_propina2"></div><div class="campo"><label>Turno *</label><input id="n_turno" list="n_turnos" placeholder="Elija o escriba"><datalist id="n_turnos"></datalist></div><div class="campo"><label>Líder del colaborador</label><input id="n_lider" placeholder="Nombre del líder"></div><div class="campo"><label>Teléfono del líder (opcional)</label><input id="n_lidertel" type="tel"></div></div>' +
       '<div class="grid g2"><div class="campo"><label>Nombre completo *</label><input id="n_nombre"></div><div class="campo"><label>Cédula</label><input id="n_cedula" placeholder="000-0000000-0"></div>' +
@@ -195,6 +196,8 @@
         var rec = await call('admin.crear', { datos: datos });
         var cf = Array.prototype.slice.call($('#n_cedfile').files || []);
         if (cf.length) { toast('Subiendo cédula…'); var arr = []; for (var i = 0; i < cf.length && i < 2; i++) arr.push(await prepararArchivo(cf[i])); rec = await call('admin.subirDoc', { id: rec.id, doc: 'cedula', archivos: arr }); }
+        var rf = ($('#n_reffile').files || [])[0];
+        if (rf) { toast('Subiendo referimiento…'); rec = await call('admin.subirLab', { id: rec.id, campo: 'referimiento', archivo: await prepararArchivo(rf) }); }
         $('#creado').innerHTML = '<div class="card" style="max-width:760px"><div class="aviso ok">Expediente creado para <b>' + esc(rec.nombre) + '</b>.</div>' +
           '<div class="campo"><label>Enlace del candidato</label><input readonly value="' + esc(enlace(rec)) + '"></div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ok" target="_blank" href="' + wa(rec, msgInvitacion(rec)) + '">Enviar por WhatsApp</a><button class="btn" id="cpL">Copiar enlace</button><button class="btn" id="cpM">Copiar mensaje</button><button class="btn" id="verN">Ver expediente</button><button class="btn" id="otro">+ Otro candidato</button></div></div>';
@@ -230,7 +233,7 @@
     // Enlace y mensajes
     h += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><b>Avance del candidato</b><span>' + p.hechos + '/' + p.total + (r.enviadoEn ? ' · Envió completo ' + fechaHora(r.enviadoEn) : ' · Vence ' + fechaHora(venceEn(r))) + '</span></div><div class="barra"><i style="width:' + p.pct + '%"></i></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn sm" id="cpEnlace">Copiar enlace</button><a class="btn sm" target="_blank" href="' + esc(enlace(r)) + '">Abrir como candidato ↗</a>' +
-      '<a class="btn sm ok" target="_blank" href="' + wa(r, msgInvitacion(r)) + '">WhatsApp: invitación</a><a class="btn sm" target="_blank" href="' + wa(r, msgRecordatorio(r)) + '">WhatsApp: recordatorio</a>' + (r.enviadoEn ? '' : '<button class="btn sm" id="extender">+2 días de plazo</button>') + '</div></div>';
+      '<a class="btn sm ok" target="_blank" href="' + wa(r, msgInvitacion(r)) + '">WhatsApp: invitación</a><button class="btn sm" id="cpInv">Copiar invitación</button><a class="btn sm" target="_blank" href="' + wa(r, msgRecordatorio(r)) + '">WhatsApp: recordatorio</a><button class="btn sm" id="cpRec">Copiar recordatorio</button>' + (r.enviadoEn ? '' : '<button class="btn sm" id="extender">+2 días de plazo</button>') + '</div></div>';
     var al = alertas(r);
     if (al.length) h += '<div class="card" style="padding:14px 18px"><b class="small">Atención</b><div class="archivos">' + al.map(function (x) { return '<span class="pill ' + (x.mal ? 'mal' : 'pend') + '">' + esc(x.t) + '</span>'; }).join('') + '</div>' +
       (cedulaVencida(r) ? '<p class="small" style="margin:6px 0 0">La cédula venció el ' + esc(r.cedulaVence) + '. Pida una cédula vigente antes de enviar el expediente.</p>' : '') + '</div>';
@@ -375,6 +378,7 @@
     var r = REC;
     $('#cerrar').onclick = cerrar;
     $('#cpEnlace').onclick = function () { copiar(enlace(r)); };
+    $('#cpInv').onclick = function () { copiar(msgInvitacion(r)); }; $('#cpRec').onclick = function () { copiar(msgRecordatorio(r)); };
     var ext = $('#extender'); if (ext) ext.onclick = function () { cambiar([['plazoExtraDias', Number(r.plazoExtraDias || 0) + 2]], 'Plazo extendido 2 días'); };
     $$('[data-psico]').forEach(function (c) { c.onchange = function () { cambiar([['psico.' + c.getAttribute('data-psico'), c.checked ? ahoraISO() : false]], 'Guardado'); }; });
     $$('[data-ingreso]').forEach(function (c) { c.onchange = function () { cambiar([['tareas.' + c.getAttribute('data-ingreso'), c.checked ? ahoraISO() : false]], 'Guardado'); }; });
