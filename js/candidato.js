@@ -46,6 +46,11 @@
     var c = cli(), p = V.progreso, ep = estadoPasos(), vence = new Date(V.vence), horas = Math.round((vence - new Date()) / 3600000);
     if (abierto === null) abierto = ep.actual || 'laboratorio';
     var html = '';
+    if (V.pausa) {
+      $('#app').innerHTML = '<div class="card" style="border-top:4px solid var(--azul)"><h1>Hola, ' + esc(primerNombre()) + '</h1><div class="aviso pend"><b>Su proceso está en pausa por el momento.</b><br>No tiene que hacer nada ahora. Le avisaremos por WhatsApp cuando pueda continuar.</div>' +
+        (V.pausa.motivo ? '<p class="small">' + esc(V.pausa.motivo) + '</p>' : '') + '<p class="small muted">Todo lo que ya completó está guardado.</p>' + ayuda() + '</div>';
+      return;
+    }
     if (V.enviadoEn || V.cerrado) {
       html += '<div class="card"><div class="aviso ok"><b>Documentos enviados completos.</b> Gracias, ' + esc(primerNombre()) + '. Estamos revisando su expediente. Le escribiremos para los próximos pasos.</div>' +
         (V.docs.induccion && !V.docs.induccion.hecho && V.cliente === 'labarra' ? '<p class="small">Mientras revisamos, puede completar <b>Conozca La Barra</b> (paso ' + pasoN('induccion') + ').</p>' : '') + ayuda() + '</div>';

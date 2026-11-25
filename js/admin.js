@@ -72,6 +72,9 @@
       'Su enlace: ' + enlace(rec) + '\n\n' +
       'Cuando vaya, márquelo en el paso ' + p + '.\n\n' + empleador(rec.cliente).firmaRRHH;
   }
+  function msgReanudar(rec) {
+    return 'Hola *' + primer(rec.nombre) + '*,\nYa puede continuar con su proceso para *' + CLIENTES[rec.cliente].nombre + '*.\n\n*Su enlace:*\n' + enlace(rec) + '\n\n*Su plazo vence el* ' + fechaLimite(rec) + '\n\n' + empleador(rec.cliente).firmaRRHH;
+  }
   function msgCarta(rec) {
     var b = bancoDeTienda(rec.cliente, rec.tienda);
     return 'Hola *' + primer(rec.nombre) + '*,\n' +
@@ -119,7 +122,7 @@
       '<div class="card" style="padding:0"><div style="display:flex;gap:10px;padding:14px;flex-wrap:wrap;border-bottom:1px solid var(--linea)">' +
       '<input id="fq" placeholder="Buscar nombre, cédula o teléfono" style="max-width:300px" value="' + esc(filtros.q) + '">' +
       '<select id="fc" style="max-width:190px"><option value="">Todos los clientes</option>' + Object.keys(CLIENTES).map(function (id) { return '<option value="' + id + '"' + (filtros.cliente === id ? ' selected' : '') + '>' + esc(CLIENTES[id].nombre) + '</option>'; }).join('') + '</select>' +
-      '<select id="fe" style="max-width:200px"><option value="">Todas las etapas</option>' + [['enlace', 'Enlace enviado'], ['completando', 'Completando'], ['depuracion', 'En depuración'], ['listo', 'Expediente listo'], ['enviado_cliente', 'Enviado al cliente'], ['descartado', 'Descartado']].map(function (x) { return '<option value="' + x[0] + '"' + (filtros.etapa === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>' +
+      '<select id="fe" style="max-width:200px"><option value="">Todas las etapas</option>' + [['enlace', 'Enlace enviado'], ['completando', 'Completando'], ['pausa', 'En pausa'], ['depuracion', 'En depuración'], ['listo', 'Expediente listo'], ['enviado_cliente', 'Enviado al cliente'], ['descartado', 'Descartado']].map(function (x) { return '<option value="' + x[0] + '"' + (filtros.etapa === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>' +
       '<div class="sp"></div><button class="btn sm" id="refrescar">↻ Actualizar</button></div>' +
       (filas.length ? '<div style="overflow:auto"><table class="lista"><thead><tr><th>Candidato</th><th>Cliente · Posición</th><th>Etapa</th><th style="width:150px">Documentos</th><th>Depuración</th><th>Plazo</th></tr></thead><tbody>' +
         filas.map(function (r) {
@@ -233,7 +236,9 @@
     // Enlace y mensajes
     h += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><b>Avance del candidato</b><span>' + p.hechos + '/' + p.total + (r.enviadoEn ? ' · Envió completo ' + fechaHora(r.enviadoEn) : ' · Vence ' + fechaHora(venceEn(r))) + '</span></div><div class="barra"><i style="width:' + p.pct + '%"></i></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn sm" id="cpEnlace">Copiar enlace</button><a class="btn sm" target="_blank" href="' + esc(enlace(r)) + '">Abrir como candidato ↗</a>' +
-      '<a class="btn sm ok" target="_blank" href="' + wa(r, msgInvitacion(r)) + '">WhatsApp: invitación</a><button class="btn sm" id="cpInv">Copiar invitación</button><a class="btn sm" target="_blank" href="' + wa(r, msgRecordatorio(r)) + '">WhatsApp: recordatorio</a><button class="btn sm" id="cpRec">Copiar recordatorio</button>' + (r.enviadoEn ? '' : '<button class="btn sm" id="extender">+2 días de plazo</button>') + '</div></div>';
+      '<a class="btn sm ok" target="_blank" href="' + wa(r, msgInvitacion(r)) + '">WhatsApp: invitación</a><button class="btn sm" id="cpInv">Copiar invitación</button><a class="btn sm" target="_blank" href="' + wa(r, msgRecordatorio(r)) + '">WhatsApp: recordatorio</a><button class="btn sm" id="cpRec">Copiar recordatorio</button>' + (r.enviadoEn ? '' : '<button class="btn sm" id="extender">+2 días de plazo</button>') +
+        (r.estado === 'activo' ? (r.pausa && r.pausa.activa ? '<button class="btn sm ok" id="reanudar">▶ Reanudar proceso</button>' : '<button class="btn sm" id="pausar">⏸ Pausar proceso</button>' + (r.pausa && r.pausa.reanudado ? '<a class="btn sm ok" target="_blank" href="' + wa(r, msgReanudar(r)) + '">WhatsApp: ya puede continuar</a>' : '')) : '') + '</div>' +
+        (r.pausa && r.pausa.activa ? '<div class="aviso pend" style="margin-top:12px"><b>Proceso en pausa</b> desde ' + esc(fechaHora(r.pausa.desde)) + '. El candidato no puede continuar y su plazo no corre.' + (r.pausa.mensaje ? '<br>Mensaje al candidato: ' + esc(r.pausa.mensaje) : '') + (r.pausa.nota ? '<br>Nota interna: ' + esc(r.pausa.nota) : '') + '</div>' : '') + '</div>';
     var al = alertas(r);
     if (al.length) h += '<div class="card" style="padding:14px 18px"><b class="small">Atención</b><div class="archivos">' + al.map(function (x) { return '<span class="pill ' + (x.mal ? 'mal' : 'pend') + '">' + esc(x.t) + '</span>'; }).join('') + '</div>' +
       (cedulaVencida(r) ? '<p class="small" style="margin:6px 0 0">La cédula venció el ' + esc(r.cedulaVence) + '. Pida una cédula vigente antes de enviar el expediente.</p>' : '') + '</div>';
@@ -392,6 +397,15 @@
     $('#cerrar').onclick = cerrar;
     $('#cpEnlace').onclick = function () { copiar(enlace(r)); };
     $('#cpInv').onclick = function () { copiar(msgInvitacion(r)); }; $('#cpRec').onclick = function () { copiar(msgRecordatorio(r)); };
+    var bp = $('#pausar'); if (bp) bp.onclick = function () {
+      var msg = prompt('Mensaje para el candidato (opcional). Ej.: "Estamos esperando respuesta del cliente."', ''); if (msg === null) return;
+      var nota = prompt('Nota interna, solo para RRHH (opcional):', ''); if (nota === null) nota = '';
+      cambiar([['pausa', { activa: true, desde: ahoraISO(), mensaje: msg.trim(), nota: nota.trim() }]], 'Proceso en pausa');
+    };
+    var br = $('#reanudar'); if (br) br.onclick = function () {
+      var dias = Math.ceil(diasEnPausa(r) * 10) / 10;
+      cambiar([['plazoExtraDias', Math.round((Number(r.plazoExtraDias || 0) + dias) * 10) / 10], ['pausa', { activa: false, reanudado: ahoraISO(), ultima: r.pausa }]], 'Proceso reanudado');
+    };
     var ext = $('#extender'); if (ext) ext.onclick = function () { cambiar([['plazoExtraDias', Number(r.plazoExtraDias || 0) + 2]], 'Plazo extendido 2 días'); };
     $$('[data-psico]').forEach(function (c) { c.onchange = function () { cambiar([['psico.' + c.getAttribute('data-psico'), c.checked ? ahoraISO() : false]], 'Guardado'); }; });
     $$('[data-ingreso]').forEach(function (c) { c.onchange = function () { cambiar([['tareas.' + c.getAttribute('data-ingreso'), c.checked ? ahoraISO() : false]], 'Guardado'); }; });

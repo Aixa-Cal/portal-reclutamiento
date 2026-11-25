@@ -25,7 +25,7 @@ function modulosATE(V) {
         'Si ya tiene seguro, su cobertura se activa después de cotizar un mes completo en la TSS. Luego retira su tarjeta en su aseguradora.'] },
 
     { id: 'pagos', icono: '💵', titulo: 'Su cuenta de banco y sus pagos', sub: 'Cuándo y cómo cobra',
-      clave: 'Cobra cada quincena: los días 14 y 29 de cada mes (un día antes del 15 y el 30).',
+      clave: 'Cobra cada quincena: los días 15 y 30 de cada mes.',
       p: ['Al ingresar recibe una carta de nómina para abrir su cuenta de banco.',
         'Cuando tenga el número de cuenta, envíelo por correo o WhatsApp a la persona que le asistió en la depuración.',
         'Los pagos tienen los descuentos de ley. Si quiere recibir su comprobante cada mes, dénos su correo.'],
@@ -50,7 +50,7 @@ function modulosATE(V) {
 
 var QUIZ_ATE = [
   { id: 'vestimenta', q: '¿Cómo debe vestirse para su primer día?', o: ['Jeans y tenis', 'Formal, en color negro y sin diseños', 'Con ropa de cualquier color'], c: 1, e: 'Vestimenta formal en color negro, sin diseños visibles.' },
-  { id: 'pago', q: '¿Qué días se paga la quincena?', o: ['Los días 14 y 29', 'Los días 1 y 15', 'Solo a fin de mes'], c: 0, e: 'Se paga un día antes de la quincena: los días 14 y 29.' },
+  { id: 'pago', q: '¿Qué días se paga la quincena?', o: ['Los días 15 y 30', 'Los días 1 y 15', 'Solo a fin de mes'], c: 0, e: 'La quincena se paga los días 15 y 30 de cada mes.' },
   { id: 'constancia', q: '¿Con cuánto tiempo pide una constancia laboral?', o: ['El mismo día', 'Un mes antes', 'Al menos 3 días laborables antes'], c: 2, e: 'Las constancias se piden con al menos 3 días laborables de anticipación.' },
   { id: 'extras', q: '¿Qué se necesita para cobrar horas extras o feriados?', o: ['Que su supervisor las solicite y lo notifique a Gestión Humana de Altice', 'Nada, se pagan solas', 'Pedírselas a un cliente'], c: 0, e: 'Se pagan previa solicitud del supervisor, que debe notificarlo a Gestión Humana de Altice.' },
   { id: 'cuenta', q: 'Ya abrió su cuenta de banco. ¿Qué hace?', o: ['Nada', 'Envío el número a la persona que me asistió en la depuración', 'Espero a la quincena'], c: 1, e: 'Envíe su número de cuenta por correo o WhatsApp a la persona que le asistió.' }

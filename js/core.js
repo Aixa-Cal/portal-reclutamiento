@@ -256,7 +256,7 @@ function progreso(rec) {
   return { hechos: h, total: lista.length, pct: Math.round(h * 100 / lista.length) };
 }
 
-function venceEn(rec) { return new Date(new Date(rec.creado).getTime() + (EMPRESA.plazoDias + Number(rec.plazoExtraDias || 0)) * 86400000).toISOString(); }
+function venceEn(rec) { return new Date(new Date(rec.creado).getTime() + (EMPRESA.plazoDias + Number(rec.plazoExtraDias || 0) + diasEnPausa(rec)) * 86400000).toISOString(); }
 function cedulaVencida(rec) { return !!rec.cedulaVence && new Date(rec.cedulaVence + 'T23:59:59') < new Date(); }
 function alertas(rec) {
   var a = [], ref = ((rec.docs.referencia.datos || {}).refs || [])[0] || {}, t = rec.tareas || {};
@@ -292,6 +292,7 @@ function etapa(rec) {
   if (rec.estado === 'descartado') return { clave: 'descartado', texto: 'Descartado' };
   if (rec.estado === 'enviado_cliente') return { clave: 'enviado_cliente', texto: 'Enviado al cliente' };
   if (rec.estado === 'listo') return { clave: 'listo', texto: 'Expediente listo' };
+  if (rec.pausa && rec.pausa.activa) return { clave: 'pausa', texto: 'En pausa' };
   if (rec.enviadoEn) return { clave: 'depuracion', texto: 'En depuración' };
   var p = progreso(rec);
   if (p.hechos === 0) return { clave: 'enlace', texto: 'Enlace enviado' };
@@ -319,7 +320,7 @@ function vistaCandidato(rec) {
   });
   return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
            tienda: rec.tienda || '', turno: rec.turno || '', lider: rec.lider || '', liderTelefono: rec.liderTelefono || '', banco: bancoDeTienda(rec.cliente, rec.tienda), empleador: emp, defs: defs, orden: ordenDe(rec),
-           cartaBanco: !!rec.cartaBancoArchivo,
+           cartaBanco: !!rec.cartaBancoArchivo, pausa: rec.pausa && rec.pausa.activa ? { motivo: rec.pausa.mensaje || '' } : null,
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
            lab: { listo: !!rec.lab.referimiento, referimiento: !!rec.lab.referimientoArchivo, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia },
            evaluacion: rec.evaluacion && rec.evaluacion.url ? { url: rec.evaluacion.url, nombre: rec.evaluacion.nombre || '', instrucciones: rec.evaluacion.instrucciones || '',
@@ -327,7 +328,12 @@ function vistaCandidato(rec) {
 }
 function limpiarDatosCand(d) { var o = {}; for (var k in (d || {})) if (k !== 'formulario') o[k] = d[k]; return o; }
 
-function exigirAbierto(rec) { if (rec.estado !== 'activo') throw new Error('Este expediente ya fue cerrado. Si necesita ayuda, escríbanos por WhatsApp.'); }
+function exigirAbierto(rec) {
+  if (rec.estado !== 'activo') throw new Error('Este expediente ya fue cerrado. Si necesita ayuda, escríbanos por WhatsApp.');
+  if (rec.pausa && rec.pausa.activa) throw new Error('Su proceso está en pausa. Le avisaremos cuando pueda continuar.');
+}
+/* Pausa: mientras está en pausa el plazo no corre (se suman los días al reanudar) */
+function diasEnPausa(rec) { return rec.pausa && rec.pausa.activa && rec.pausa.desde ? Math.max(0, (Date.now() - new Date(rec.pausa.desde).getTime()) / 86400000) : 0; }
 
 function aplicarSubida(rec, docId, archivos, datos, reemplazar, porAdmin) {
   if (!porAdmin) exigirAbierto(rec);
@@ -461,7 +467,7 @@ var NIVELES_PERS = ['Excelente', 'Bueno', 'Regular', 'Malo'];
 var RELACIONES_PERS = ['Amigo/a', 'Compañero/a de estudio', 'Vecino/a', 'Profesor/a', 'Otro (no familiar)'];
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(tienda|turno|lider|liderTelefono|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco|tss|nomina|ponche|uniforme|cartaNomina)|psico\.(enviada|completada)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var RUTAS_ADMIN = /^(pausa|tienda|turno|lider|liderTelefono|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco|tss|nomina|ponche|uniforme|cartaNomina)|psico\.(enviada|completada)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;
