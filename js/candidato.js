@@ -51,6 +51,9 @@
         (V.pausa.motivo ? '<p class="small">' + esc(V.pausa.motivo) + '</p>' : '') + '<p class="small muted">Todo lo que ya completó está guardado.</p>' + ayuda() + '</div>';
       return;
     }
+    if (V.listoIngreso) {
+      html += '<div class="card" style="border-top:4px solid var(--ok)"><h1>¡Felicidades, ' + esc(primerNombre()) + '!</h1><div class="aviso ok"><b>Usted completó su proceso y está listo/a para ingresar.</b> Le escribiremos por WhatsApp con los detalles de su primer día.</div>' + ayuda() + '</div>';
+    }
     if (V.enviadoEn || V.cerrado) {
       html += '<div class="card"><div class="aviso ok"><b>Documentos enviados completos.</b> Gracias, ' + esc(primerNombre()) + '. Estamos revisando su expediente. Le escribiremos para los próximos pasos.</div>' +
         (V.docs.induccion && !V.docs.induccion.hecho && V.cliente === 'labarra' ? '<p class="small">Mientras revisamos, puede completar <b>Conozca La Barra</b> (paso ' + pasoN('induccion') + ').</p>' : '') + ayuda() + '</div>';

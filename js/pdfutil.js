@@ -191,8 +191,8 @@ async function pdfCompromiso(V, cli, firma, meta) {
 
 /* ---------- Solicitud de referencias laborales ---------- */
 function dibujarReferencia(z, rec) {
-  var F = rec.referencia.formulario, refs = ((rec.docs.referencia.datos || {}).refs || []);
-  var esPrimer = !!(rec.docs.referencia.datos || {}).primerEmpleo;
+  var F = rec.referencia.formulario, refs = (datosRef(rec).refs || []);
+  var esPrimer = !!datosRef(rec).primerEmpleo;
   z.encabezado(esPrimer ? 'Referencia personal (primer empleo)' : 'Solicitud de referencias laborales', 'Candidato: ' + rec.nombre + (rec.cedula ? ' · Cédula ' + rec.cedula : '') + ' · ' + CLIENTES[rec.cliente].nombre);
   if (!F) {
     z.texto('Referencia pendiente de verificar. Contactos suministrados por el candidato:', { size: 9, color: GRIS });
@@ -222,7 +222,7 @@ function dibujarReferencia(z, rec) {
     ['Verificado por', (F.verificadoPor || '') + ' – ' + empleador(rec.cliente).firmaRRHH], ['Medio', 'Llamada telefónica']], 3);
 }
 async function pdfReferencia(rec) {
-  var z = await nuevoLienzo(CLIENTES[rec.cliente].colores.pri, empleador(rec.cliente).nombre); z.pie = ((rec.docs.referencia.datos || {}).primerEmpleo ? 'Referencia personal · ' : 'Referencia laboral · ') + rec.nombre + ' · ' + empleador(rec.cliente).razon;
+  var z = await nuevoLienzo(CLIENTES[rec.cliente].colores.pri, empleador(rec.cliente).nombre); z.pie = (datosRef(rec).primerEmpleo ? 'Referencia personal · ' : 'Referencia laboral · ') + rec.nombre + ' · ' + empleador(rec.cliente).razon;
   dibujarReferencia(z, rec); return await z.doc.save();
 }
 
@@ -238,9 +238,9 @@ async function pdfExpediente(rec, traerArchivo, progresoCb) {
   if (dd.completo) z.campos([['Fecha de nacimiento', dd.nacimiento], ['Dirección', dd.direccion], ['Contacto de emergencia', dd.emergenciaNombre + (dd.emergenciaParentesco ? ' (' + dd.emergenciaParentesco + ')' : '') + ' · ' + dd.emergenciaTelefono], ['Talla', dd.talla]], 2);
   z.seccion('Depuración');
   function est(v) { return v === 'ok' ? 'Completado' : v === 'mal' ? 'Con observación' : 'Pendiente'; }
-  var ref0 = ((rec.docs.referencia.datos || {}).refs || [])[0] || {};
+  var ref0 = (datosRef(rec).refs || [])[0] || {};
   z.campos([['Documentos', est(dep.docs)], ['Evaluación pre empleo', rec.lab.resultado === 'apto' ? 'APTO para trabajar' : rec.lab.resultado === 'no_apto' ? 'NO APTO' : 'Pendiente'],
-    [(rec.docs.referencia.datos || {}).primerEmpleo ? 'Referencia personal (primer empleo)' : 'Referencia laboral', rec.referencia.verificada ? (rec.referencia.resultado === 'negativa' ? 'Verificada – negativa' : rec.referencia.resultado === 'no_localizable' ? 'No localizable' : 'Verificada – positiva') : 'Pendiente'],
+    [datosRef(rec).primerEmpleo ? 'Referencia personal (primer empleo)' : 'Referencia laboral', rec.referencia.verificada ? (rec.referencia.resultado === 'negativa' ? 'Verificada – negativa' : rec.referencia.resultado === 'no_localizable' ? 'No localizable' : 'Verificada – positiva') : 'Pendiente'],
     ['Evaluación del puesto', !(rec.evaluacion || {}).url ? 'No aplica' : rec.evaluacion.completadaEn ? 'Completada el ' + fechaCorta(rec.evaluacion.completadaEn) + ' (constancia de conocimientos)' : 'Pendiente'],
     ['Relaciones / familiares en ' + cli.nombre, rec.familiares.verificado ? (rec.familiares.conflicto ? 'Con conflicto' : rec.familiares.declara === 'si' ? 'Relación declarada – verificada sin conflicto' : 'Sin familiares en la empresa – verificado') : 'Pendiente']], 2);
   if (rec.referencia.verificada) z.campos([['Referencia', (ref0.nombre || '') + (ref0.cargo ? ', ' + ref0.cargo : '') + (ref0.empresa ? ' – ' + ref0.empresa : '') + (ref0.telefono ? ' · ' + ref0.telefono : '')],
