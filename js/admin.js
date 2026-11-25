@@ -286,7 +286,7 @@
       '<div class="campo" style="margin-top:10px"><label>Notas internas del laboratorio</label><input id="labNotas" value="' + esc(lab.notas) + '"></div></div>';
 
     // La Barra: datos y contactos + inducción
-    if (r.docs.datos) {
+    if (docDe(r, 'datos')) {
       var dd = r.docs.datos.datos || {};
       h += '<div class="card"><h3>Datos y contactos del candidato</h3>' + (dd.completo ?
         '<div class="grid g2 small"><div>Nacimiento: <b>' + esc(dd.nacimiento || '') + '</b></div><div>Correo: <b>' + esc(dd.correo || '') + '</b></div><div>Dirección: <b>' + esc(dd.direccion || '') + '</b></div><div>Talla: <b>' + esc(dd.talla || '—') + '</b></div>' +
@@ -294,10 +294,10 @@
         '<div class="interno" style="margin-top:10px"><div class="tiny" style="color:var(--azul);font-weight:700">CONFIDENCIAL — SALUD</div><div class="small">' + (dd.salud === 'si' ? '<b>Sí</b>: ' + esc(dd.saludDetalle || '') : 'No reporta condiciones') + '</div></div>'
         : '<p class="small muted">El candidato aún no completa sus datos.</p>') + '</div>';
     }
-    if (r.docs.induccion) {
+    if (docDe(r, 'induccion')) {
       var di = r.docs.induccion.datos || {}, qz = di.quiz;
-      h += '<div class="card"><h3>Inducción · Conozca La Barra</h3><div class="small">Temas leídos: <b>' + (di.leidos || []).length + ' de ' + (di.modulosTotal || 7) + '</b> · Cuestionario: <b>' + (qz ? qz.correctas + ' de ' + qz.total + ' correctas' : 'pendiente') + '</b>' +
-        (di.requiereProtocolo ? ' · Protocolo: <b>' + (di.protocolo ? 'leído' : 'pendiente') + '</b>' : '') + ' · Compromiso de integridad: <b>' + (di.compromiso ? 'firmado ' + fechaCorta(di.compromiso.firmadoEn) : 'pendiente') + '</b></div>' +
+      h += '<div class="card"><h3>Inducción · ' + esc(docDe(r, 'induccion').titulo.replace(' (inducción)', '')) + '</h3><div class="small">Temas leídos: <b>' + (di.leidos || []).length + ' de ' + (di.modulosTotal || 7) + '</b> · Cuestionario: <b>' + (qz ? qz.correctas + ' de ' + qz.total + ' correctas' : 'pendiente') + '</b>' +
+        (di.requiereProtocolo ? ' · Protocolo: <b>' + (di.protocolo ? 'leído' : 'pendiente') + '</b>' : '') + (r.cliente === 'labarra' ? ' · Compromiso de integridad: <b>' + (di.compromiso ? 'firmado ' + fechaCorta(di.compromiso.firmadoEn) : 'pendiente') + '</b>' : '') + (di.talla ? ' · Talla T-shirt: <b>' + esc(di.talla) + '</b>' : '') + '</div>' +
         ((r.docs.induccion.archivos || []).length ? '<div class="archivos">' + r.docs.induccion.archivos.map(function (a) { return '<button class="btn sm" data-ver="' + a.fileId + '">👁 ' + esc(a.nombre) + '</button>'; }).join('') + '</div>' : '') +
         (di.completo ? '<div class="aviso ok" style="margin-top:10px">Inducción completada.</div>' : '') + '<p class="tiny muted">La inducción no confirma la contratación.</p></div>';
     }
@@ -313,8 +313,8 @@
 
     // Tareas del primer día
     var tar2 = r.tareas || {}, LISTA_ING = c.directo ?
-      [['tss', 'Alta en la TSS'], ['nomina', 'Registro en la nómina'], ['ponche', 'Registro en el ponche'], ['uniforme', 'Uniforme entregado' + (((r.docs.datos && r.docs.datos.datos) || {}).talla ? ' (talla ' + ((r.docs.datos.datos || {}).talla) + ')' : '')], ['cartaNomina', 'Carta de nómina enviada']] :
-      [['tss', 'Alta en la TSS'], ['nomina', 'Registro en la nómina']];
+      [['tss', 'Alta en la TSS'], ['nomina', 'Registro en la nómina'], ['ponche', 'Registro en el ponche'], ['uniforme', 'Uniforme entregado' + (((r.docs.datos && r.docs.datos.datos) || {}).talla || ((r.docs.induccion && r.docs.induccion.datos) || {}).talla ? ' (talla ' + ((((r.docs.datos || {}).datos) || {}).talla || r.docs.induccion.datos.talla) + ')' : '')], ['cartaNomina', 'Carta de nómina enviada']] :
+      [['tss', 'Alta en la TSS'], ['nomina', 'Registro en la nómina'], ['cartaNomina', 'Carta de nómina enviada'], ['uniforme', 'T-shirt y carnet entregados' + (((r.docs.induccion && r.docs.induccion.datos) || {}).talla ? ' (talla ' + r.docs.induccion.datos.talla + ')' : '')]];
     var hechas = LISTA_ING.filter(function (x) { return tar2[x[0]]; }).length;
     h += '<div class="card"><h3>Primer día · tareas de ingreso <span class="pill ' + (hechas === LISTA_ING.length ? 'ok' : 'gris') + '">' + hechas + ' de ' + LISTA_ING.length + '</span></h3><p class="small muted">Márquelas cuando el colaborador ya entra.</p>' +
       LISTA_ING.map(function (x) { return '<label class="check" style="margin-bottom:6px"><input type="checkbox" data-ingreso="' + x[0] + '"' + (tar2[x[0]] ? ' checked' : '') + '> ' + esc(x[1]) + (tar2[x[0]] && tar2[x[0]] !== true ? ' <span class="muted tiny">(' + esc(fechaCorta(tar2[x[0]])) + ')</span>' : '') + '</label>'; }).join('') + '</div>';

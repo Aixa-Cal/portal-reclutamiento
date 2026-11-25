@@ -23,7 +23,10 @@ var CLIENTES = {
       solicitud: 'formularios/altice-solicitud-empleo.pdf',
       declaracion: 'formularios/altice-declaracion-relaciones.pdf'
     },
-    vacante: { posicion: 'Host de Servicio al Cliente', salario: '13,744.80', contratoMeses: 6 }
+    vacante: { posicion: 'Host de Servicio al Cliente', salario: '13,744.80', contratoMeses: 6 },
+    docs: ['foto', 'solicitud', 'declaracion', 'cedula', 'estudios', 'conducta', 'banco', 'ars', 'laboratorio', 'referencia', 'covid', 'induccion'],
+    orden: ['cedula', 'referencia', 'laboratorio', 'evaluacion', 'foto', 'solicitud', 'declaracion', 'estudios', 'conducta', 'banco', 'ars', 'covid', 'induccion'],
+    ajustes: { induccion: { titulo: 'Conozca su puesto (inducción)', corto: 'Inducción' } }
   },
   crecer: {
     id: 'crecer',
@@ -304,7 +307,7 @@ function resumen(rec) {
 }
 
 /* Lo único que ve el candidato (sin sexo, sin tipo de prueba, sin notas internas) */
-function asegurarDocs(rec) { DOCS.forEach(function (doc) { if (!rec.docs[doc.id]) rec.docs[doc.id] = { estado: 'pendiente', archivos: [], datos: {}, nota: '', actualizado: '' }; }); }
+function asegurarDocs(rec) { docsDe(rec).forEach(function (doc) { if (!rec.docs[doc.id]) rec.docs[doc.id] = { estado: 'pendiente', archivos: [], datos: {}, nota: '', actualizado: '' }; }); }
 
 function vistaCandidato(rec) {
   asegurarDocs(rec);
@@ -376,7 +379,9 @@ function aplicarDatos(rec, docId, datos) {
     if (datos.quiz) { di.quiz = { respuestas: datos.quiz.respuestas || {}, correctas: Number(datos.quiz.correctas || 0), total: Number(datos.quiz.total || 0), en: ahoraISO() }; registrar(rec, 'Candidato respondió el cuestionario de inducción: ' + di.quiz.correctas + '/' + di.quiz.total); }
     if (datos.protocolo) di.protocolo = ahoraISO();
     var modTotal = Number(datos.modulosTotal || di.modulosTotal || 0); if (modTotal) di.modulosTotal = modTotal;
-    var listo = di.modulosTotal && di.leidos.length >= di.modulosTotal && di.quiz && di.compromiso && (!datos.requiereProtocolo && !di.requiereProtocolo || di.protocolo);
+    if (datos.talla) di.talla = String(datos.talla).slice(0, 8);
+    var reqComp = rec.cliente === 'labarra';
+    var listo = di.modulosTotal && di.leidos.length >= di.modulosTotal && di.quiz && (!reqComp || di.compromiso) && (!datos.requiereProtocolo && !di.requiereProtocolo || di.protocolo);
     if (datos.requiereProtocolo) di.requiereProtocolo = true;
     if (listo && !di.completo) { di.completo = true; registrar(rec, 'Candidato completó la inducción'); }
     d.datos = di; d.actualizado = ahoraISO(); rec.actualizado = ahoraISO();

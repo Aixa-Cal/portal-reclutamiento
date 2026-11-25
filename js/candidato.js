@@ -121,8 +121,8 @@
   }
 
   function induccionHtml(d) {
-    var mods = modulosLaBarra(V), di = d.datos || {}, leidos = di.leidos || [], quiz = di.quiz, cl = cli();
-    var h = '<p class="small">Son temas cortos, con ejemplos. Lea cada uno (o toque <b>🔊 Escuchar</b> y se lo leemos) y toque <b>Ya lo leí</b>. Al final vea el menú y responda ' + QUIZ_TOTAL + ' preguntas fáciles. Para terminar, firme su compromiso de integridad.</p>' +
+    var IN = induccionDe(V, token), mods = IN.mods, di = d.datos || {}, leidos = di.leidos || [], quiz = di.quiz, cl = cli();
+    var h = '<p class="small">Son temas cortos, con ejemplos. Lea cada uno (o toque <b>🔊 Escuchar</b> y se lo leemos) y toque <b>Ya lo leí</b>. Al final ' + (IN.menu.length ? 'vea el menú y ' : '') + 'responda ' + IN.quiz.length + ' preguntas fáciles.' + (IN.compromiso ? ' Para terminar, firme su compromiso de integridad.' : '') + '</p>' +
       '<div class="aviso">' + leidos.length + ' de ' + mods.length + ' temas leídos · Cuestionario: ' + (quiz ? quiz.correctas + ' de ' + quiz.total + ' correctas' : 'pendiente') + '</div>';
     mods.forEach(function (m, i) {
       var ok = leidos.indexOf(m.id) >= 0;
@@ -136,11 +136,12 @@
           '<p class="small" style="margin:4px 0">✅ ' + esc(e.bien) + '</p><p class="small" style="margin:4px 0">❌ ' + esc(e.mal) + '</p></div>'; }).join('') +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-escuchar="' + m.id + '">🔊 Escuchar</button>' + (ok ? '<span class="pill ok">Leído</span>' : '<button class="btn sm pri" data-leido="' + m.id + '">Ya lo leí</button>') + '</div></div>';
     });
-    h += '<div class="card flat" style="padding:14px 16px"><b>Nuestro menú</b><p class="small muted">Toque una imagen para verla grande.</p><div class="grid g2">' +
-      MENU_LB.map(function (u) { return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="Menú La Barra" style="width:100%;border-radius:10px;border:1px solid var(--linea)"></a>'; }).join('') + '</div>';
-    var QZ = quizDe(token);
+    if (IN.talla) h += '<div class="card flat" style="padding:14px 16px"><b>👕 Su talla de T-shirt</b><p class="small muted">Para preparar su camiseta con anticipación.</p><div style="display:flex;gap:8px;flex-wrap:wrap">' + ['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(function (t) { return '<button class="btn sm' + (di.talla === t ? ' pri' : '') + '" data-talla="' + t + '">' + t + '</button>'; }).join('') + '</div></div>';
+    h += '<div class="card flat" style="padding:14px 16px">' + (IN.menu.length ? '<b>Nuestro menú</b><p class="small muted">Toque una imagen para verla grande.</p><div class="grid g2">' +
+      IN.menu.map(function (u) { return '<a href="' + u + '" target="_blank"><img src="' + u + '" alt="Menú" style="width:100%;border-radius:10px;border:1px solid var(--linea)"></a>'; }).join('') + '</div>' : '<b>Preguntas para terminar</b>');
+    var QZ = IN.quiz;
     if (quiz && !d._repetirQuiz) {
-      h += '<h3 style="margin-top:14px">Sus respuestas: ' + quiz.correctas + ' de ' + quiz.total + '</h3>' + QUIZ_LB.filter(function (q) { return quiz.respuestas[q.id] != null; }).map(function (q) {
+      h += '<h3 style="margin-top:14px">Sus respuestas: ' + quiz.correctas + ' de ' + quiz.total + '</h3>' + IN.todas.filter(function (q) { return quiz.respuestas[q.id] != null; }).map(function (q) {
         var r = quiz.respuestas[q.id], bien = r === q.c;
         return '<div class="small" style="margin:6px 0"><b>' + (bien ? '✓' : '✗') + ' ' + esc(q.q) + '</b><br>' + (bien ? '' : 'Correcta: ' + esc(q.o[q.c]) + '. ') + '<span class="muted">' + esc(q.e) + '</span></div>';
       }).join('') + '<button class="btn sm" data-repetirquiz>Responder otra vez</button>';
@@ -150,7 +151,7 @@
       }).join('') + '<button class="btn pri" data-enviarquiz>Enviar respuestas</button>';
     }
     h += '</div>';
-    h += di.compromiso ? '<div class="aviso ok" style="margin-top:10px">🤝 Compromiso de integridad firmado el ' + esc(fechaCorta(di.compromiso.firmadoEn)) + '. ¡Gracias!</div>' :
+    if (IN.compromiso) h += di.compromiso ? '<div class="aviso ok" style="margin-top:10px">🤝 Compromiso de integridad firmado el ' + esc(fechaCorta(di.compromiso.firmadoEn)) + '. ¡Gracias!</div>' :
       '<div class="card flat" style="padding:14px 16px;margin-top:10px;border:2px solid var(--azul)"><b>🤝 Mi compromiso de integridad</b><p class="small muted">Para terminar la inducción, léalo, marque la casilla y firme con su dedo.</p><ul class="small">' +
       COMPROMISO_LB.map(function (x) { return '<li style="margin:4px 0">' + esc(x) + '</li>'; }).join('') + '</ul>' +
       '<form data-form="compromiso"><label class="check"><input type="checkbox" name="acepto"> Me comprometo con la integridad de ' + esc(emp().nombre) + '. Entiendo que si no cumplo, no puede haber una relación laboral.</label><div style="height:10px"></div><div class="firma-box"></div></form>' +
@@ -163,7 +164,7 @@
 
   async function guardarInduccion(datos, irA) {
     try {
-      var nv = await API.call('cand.datos', { token: token, doc: 'induccion', datos: mezclar(datos, { modulosTotal: modulosLaBarra(V).length, requiereProtocolo: !!cli().protocoloUrl }) });
+      var nv = await API.call('cand.datos', { token: token, doc: 'induccion', datos: mezclar(datos, { modulosTotal: induccionDe(V, token).mods.length, requiereProtocolo: !!cli().protocoloUrl }) });
       V = nv; pintar(); var el = irA ? $('[data-mod="' + irA + '"]') : $('.paso[data-paso=induccion]');
       if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.pageYOffset - 90) });
       if (V.docs.induccion.hecho) toast('¡Inducción completada!', 'ok');
@@ -371,11 +372,11 @@
     $$('[data-leido]', paso).forEach(function (b) { b.onclick = function () { b.disabled = true; guardarInduccion({ modulo: b.getAttribute('data-leido') }, b.getAttribute('data-leido')); }; });
     $$('[data-escuchar]', paso).forEach(function (b) { b.onclick = function () {
       if (!window.speechSynthesis) return toast('Su teléfono no permite escuchar el texto', 'mal');
-      var m = modulosLaBarra(V).filter(function (x) { return x.id === b.getAttribute('data-escuchar'); })[0];
+      var m = induccionDe(V, token).mods.filter(function (x) { return x.id === b.getAttribute('data-escuchar'); })[0];
       speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(textoModulo(m)); u.lang = 'es-ES'; u.rate = 0.95; speechSynthesis.speak(u);
     }; });
     var eq = $('[data-enviarquiz]', paso); if (eq) eq.onclick = function () {
-      var resp = {}, falt = 0, ok = 0, QZ = quizDe(token);
+      var resp = {}, falt = 0, ok = 0, QZ = induccionDe(V, token).quiz;
       QZ.forEach(function (q) { var r = $('input[name="q_' + q.id + '"]:checked', paso); if (!r) falt++; else { resp[q.id] = +r.value; if (+r.value === q.c) ok++; } });
       if (falt) return toast('Responda las ' + QZ.length + ' preguntas', 'mal');
       d._repetirQuiz = false; guardarInduccion({ quiz: { respuestas: resp, correctas: ok, total: QZ.length } });
@@ -393,6 +394,7 @@
         pintar(); toast(V.docs.induccion.hecho ? '¡Inducción completada!' : 'Compromiso firmado', 'ok');
       } catch (e) { bfc.disabled = false; toast(e.message, 'mal'); }
     };
+    $$('[data-talla]', paso).forEach(function (b) { b.onclick = function () { guardarInduccion({ talla: b.getAttribute('data-talla') }); toast('Talla guardada', 'ok'); }; });
     var pc = $('[data-protocolo]', paso); if (pc) pc.onchange = function () { if (pc.checked) guardarInduccion({ protocolo: true }); };
 
     var form = $('form[data-form]:not([data-form=datos])', paso);
