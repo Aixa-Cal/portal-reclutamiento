@@ -90,7 +90,7 @@
     var ind = docDe(rec, 'induccion'), indHecha = ind && pasoHecho(rec, 'induccion'), banco = bancoDeTienda(rec.cliente, rec.tienda);
     var lugar = ing.sucursal || rec.tienda || '';
     var puntos = [];
-    puntos.push((ind && indHecha ? 'Repase su *inducción*' : 'Lea su *inducción*') + (ind ? ' (paso ' + numeroPaso(rec, 'induccion') + ' de su enlace)' : '') + ' aquí:\n' + enlace(rec));
+    puntos.push((ind && indHecha ? 'Repase su *inducción*' : 'Lea su *inducción*') + (ind ? ' (paso ' + numeroPaso(rec, 'induccion') + ' de su enlace)' : '') + ' aquí:\n' + enlace(rec) + (ind ? '&paso=induccion' : ''));
     if (!talla) puntos.push('Confirme su talla de t-shirt: XS, S, M, L, XL o XXL.');
     puntos.push(c.directo ? 'Asista bien vestido/a, puntual, higienizado/a y sin chancletas.' : 'Asista con vestimenta completamente negra, puntual y con buena presentación.');
     puntos.push((c.directo ? 'Su líder le entregará su uniforme' : 'Su líder gestionará en la tienda su t-shirt y carnet') + (talla ? ' (talla ' + talla + ').' : '.'));

@@ -1,12 +1,13 @@
 /* Portal del candidato: pasos para completar el expediente */
 (function () {
-  var token = new URLSearchParams(location.search).get('t');
+  var token = new URLSearchParams(location.search).get('t'), pasoUrl = new URLSearchParams(location.search).get('paso');
   var app = $('#app'), V = null, abierto = null, cfg = window.PORTAL_CONFIG || {};
   if (API.demo) $('#demo').classList.remove('hidden');
   if (!token) { app.innerHTML = '<div class="card"><h2>Enlace incompleto</h2><p class="muted">Abra el enlace exacto que le enviamos por WhatsApp.</p></div>'; return; }
 
   async function cargar() {
-    try { V = await API.call('cand.ver', { token: token }); aplicarTema(V.cliente); marca(); document.querySelector('meta[name=theme-color]') || document.head.insertAdjacentHTML('beforeend', '<meta name="theme-color" content="' + cli().colores.pri + '">'); pintar(); }
+    try { V = await API.call('cand.ver', { token: token }); aplicarTema(V.cliente); marca(); document.querySelector('meta[name=theme-color]') || document.head.insertAdjacentHTML('beforeend', '<meta name="theme-color" content="' + cli().colores.pri + '">');
+      if (pasoUrl && V.docs[pasoUrl] && !V.pausa) { abierto = pasoUrl; pintar(); setTimeout(function () { irAPaso(pasoUrl); }, 60); } else pintar(); }
     catch (e) { app.innerHTML = '<div class="card"><h2>No pudimos abrir su expediente</h2><p class="muted">' + esc(e.message) + '</p>' + ayuda() + '</div>'; }
   }
   function ayuda() { return cfg.WHATSAPP_AYUDA ? '<p class="small">¿Tiene dudas? <a href="https://wa.me/' + cfg.WHATSAPP_AYUDA + '" target="_blank">Escríbanos por WhatsApp</a></p>' : ''; }
