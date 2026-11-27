@@ -75,6 +75,40 @@
   function msgReanudar(rec) {
     return 'Hola *' + primer(rec.nombre) + '*,\nYa puede continuar con su proceso para *' + CLIENTES[rec.cliente].nombre + '*.\n\n*Su enlace:*\n' + enlace(rec) + '\n\n*Su plazo vence el* ' + fechaLimite(rec) + '\n\n' + empleador(rec.cliente).firmaRRHH;
   }
+  /* Fecha de ingreso en palabras: "mañana, martes 20 de octubre de 2026, a las 10:00 a. m." */
+  function textoIngreso(ing) {
+    if (!ing || !ing.fecha) return '';
+    var d = new Date(ing.fecha + 'T' + (ing.hora || '08:00') + ':00'), hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    var dias = Math.round((new Date(ing.fecha + 'T00:00:00') - hoy) / 86400000);
+    var f = d.toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^([^,\s]+),\s/, '$1 ');
+    var h = ing.hora ? ', a las ' + d.toLocaleTimeString('es-DO', { hour: 'numeric', minute: '2-digit' }) : '';
+    return (dias === 0 ? 'hoy, ' : dias === 1 ? 'mañana, ' : '') + f + h;
+  }
+  function msgIngreso(rec) {
+    var c = CLIENTES[rec.cliente], E = empleador(rec.cliente), ing = rec.ingreso || {}, fem = rec.sexo === 'F';
+    var talla = (((rec.docs.datos || {}).datos) || {}).talla || (((rec.docs.induccion || {}).datos) || {}).talla;
+    var ind = docDe(rec, 'induccion'), indHecha = ind && pasoHecho(rec, 'induccion'), banco = bancoDeTienda(rec.cliente, rec.tienda);
+    var lugar = ing.sucursal || rec.tienda || '';
+    var puntos = [];
+    if (ind) puntos.push(indHecha ? 'Repase su *inducción* en su enlace si tiene alguna duda.' : 'Lea su *inducción* en su enlace (paso ' + numeroPaso(rec, 'induccion') + '): ' + enlace(rec));
+    else puntos.push('Lea el *documento de inducción adjunto*.');
+    if (!talla) puntos.push('Confirme su talla de t-shirt: XS, S, M, L, XL o XXL.');
+    puntos.push(c.directo ? 'Asista bien vestido/a, puntual, higienizado/a y sin chancletas.' : 'Asista con vestimenta completamente negra, puntual y con buena presentación.');
+    puntos.push((c.directo ? 'Su líder le entregará su uniforme' : 'Su líder gestionará en la tienda su t-shirt y carnet') + (talla ? ' (talla ' + talla + ').' : '.'));
+    return 'Hola *' + primer(rec.nombre) + '*. ¡' + (fem ? 'Bienvenida' : 'Bienvenido') + ' al equipo!\n\n' +
+      'Su ingreso está pautado para *' + textoIngreso(ing) + '*' + (lugar ? ', en *' + lugar + '*' : '') + '.\n\n' +
+      '*Dirección:*\n' + (ing.direccion || 'Pendiente confirmar') + '\n\n' +
+      (c.directo ? 'Las solicitudes y situaciones del trabajo diario debe comunicarlas primero a su líder' + (rec.lider ? ', *' + rec.lider + '*' : '') + '. Para Recursos Humanos y nómina, estamos a la orden.\n\n' :
+        'Le recordamos que estará prestando servicios para *' + c.nombre + '* mediante la empresa contratista *' + EMPRESA.razon + ', RNC ' + EMPRESA.rnc + '*. Nosotros somos su empleador y su contacto para cualquier asistencia relacionada con su contratación y nómina.\n\n' +
+        'Las solicitudes y situaciones del trabajo diario debe comunicarlas primero a su líder de tienda. De igual manera, siempre estaremos a la orden para ' + (fem ? 'orientarla y asistirla' : 'orientarlo y asistirlo') + '.\n\n') +
+      (rec.vacante.salario ? 'Su salario mensual será de *RD$' + rec.vacante.salario + '*, sujeto a los descuentos de ley correspondientes.\n\n' : '') +
+      'Por favor:\n' + puntos.map(function (p) { return '- ' + p; }).join('\n') + '\n\n' +
+      (rec.cartaBancoArchivo ? 'Su *carta de nómina* ya está en su enlace (paso ' + numeroPaso(rec, 'banco') + '). Descárguela y diríjase al *' + banco + '* para abrir su cuenta.' :
+        'También le adjuntamos su *carta de nómina*, con la cual deberá dirigirse al *' + banco + '* para abrir su cuenta.') +
+      ' Una vez abierta, envíenos una foto clara de la constancia bancaria donde aparezcan su nombre y número de cuenta, para poder registrar correctamente el pago de su nómina.\n\n' +
+      'Responda:\n*"Confirmo que leí la inducción.' + (talla ? '"' : ' Mi talla de t-shirt es ____."') + '*\n\n' +
+      'Quedamos a la orden. ¡Le deseamos mucho éxito!\n\n' + E.firmaRRHH;
+  }
   function msgCarta(rec) {
     var b = bancoDeTienda(rec.cliente, rec.tienda);
     return 'Hola *' + primer(rec.nombre) + '*,\n' +
@@ -310,6 +344,16 @@
     }
 
     function bloqueRRHH2(t, a) { return bloqueRRHH(t, a); }
+    // Fecha de ingreso y mensaje de bienvenida
+    var ing = r.ingreso || {};
+    h += '<div class="card"><h3>Fecha de ingreso y mensaje de bienvenida</h3><p class="small muted">Llénelo cuando tenga la fecha. El mensaje sale listo para WhatsApp' + (docDe(r, 'induccion') ? ', con el enlace a su inducción' : '') + '.</p>' +
+      '<div class="grid g2"><div class="campo"><label>Fecha de ingreso</label><input type="date" id="ingFecha" value="' + esc(ing.fecha || '') + '"></div><div class="campo"><label>Hora</label><input type="time" id="ingHora" value="' + esc(ing.hora || '') + '"></div>' +
+      '<div class="campo"><label>Sucursal</label><input id="ingSucursal" placeholder="Ej.: Altice Villa Mella" value="' + esc(ing.sucursal || r.tienda || '') + '"></div><div class="campo"><label>Dirección</label><input id="ingDireccion" placeholder="Si la deja vacía dice: Pendiente confirmar" value="' + esc(ing.direccion || '') + '"></div></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn sm pri" id="ingGuardar">Guardar fecha</button>' +
+      (ing.fecha ? '<a class="btn sm ok" target="_blank" href="' + wa(r, msgIngreso(r)) + '">WhatsApp: mensaje de ingreso</a><button class="btn sm" id="cpIng">Copiar mensaje de ingreso</button>' : '') +
+      (!c.tiendas ? '<label class="btn sm">' + (r.cartaBancoArchivo ? 'Cambiar carta de nómina' : '⬆ Subir carta de nómina') + '<input type="file" class="hidden" id="upCartaIng" accept="application/pdf,image/*"></label>' + (r.cartaBancoArchivo ? '<button class="btn sm" data-ver="' + r.cartaBancoArchivo.fileId + '">👁 Ver carta</button>' : '') : '') + '</div>' +
+      (!c.tiendas ? '<p class="tiny muted" style="margin-top:6px">Si sube la carta aquí, el candidato la descarga desde su enlace y el mensaje se lo indica. Si no, adjúntela en WhatsApp.</p>' : '') + '</div>';
+
     // Evaluaciones psicométricas
     var ps = r.psico || {}, correoC = r.correo || ((r.docs.datos && r.docs.datos.datos) || {}).correo || '';
     h += '<div class="card"><h3>Evaluaciones psicométricas</h3>' +
@@ -453,6 +497,12 @@
     $('#upRef').onchange = function () { subirLab(this, 'referimiento'); };
     $('#upRes').onchange = function () { subirLab(this, 'resultado'); };
     var uc = $('#upCarta'); if (uc) uc.onchange = function () { subirLab(this, 'cartaBanco'); };
+    var uci = $('#upCartaIng'); if (uci) uci.onchange = function () { subirLab(this, 'cartaBanco'); };
+    $('#ingGuardar').onclick = function () {
+      var f = $('#ingFecha').value; if (!f) return toast('Indique la fecha de ingreso', 'mal');
+      cambiar([['ingreso.fecha', f], ['ingreso.hora', $('#ingHora').value], ['ingreso.sucursal', $('#ingSucursal').value.trim()], ['ingreso.direccion', $('#ingDireccion').value.trim()]], 'Fecha de ingreso guardada');
+    };
+    var cpi = $('#cpIng'); if (cpi) cpi.onclick = function () { copiar(msgIngreso(r)); };
     $('#labRes').onchange = function () { cambiar([['lab.resultado', this.value]], 'Resultado guardado'); };
     $('#labNotas').onchange = function () { cambiar([['lab.notas', this.value]]); };
     var claveRefA = 'refadmin_' + r.id;

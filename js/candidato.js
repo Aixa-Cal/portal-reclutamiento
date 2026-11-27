@@ -51,6 +51,11 @@
         (V.pausa.motivo ? '<p class="small">' + esc(V.pausa.motivo) + '</p>' : '') + '<p class="small muted">Todo lo que ya completó está guardado.</p>' + ayuda() + '</div>';
       return;
     }
+    if (V.ingreso && V.ingreso.fecha) {
+      var fi = new Date(V.ingreso.fecha + 'T' + (V.ingreso.hora || '08:00') + ':00');
+      html += '<div class="card" style="border-top:4px solid var(--ok)"><h2 style="margin-top:0">Su ingreso</h2><p><b>' + esc(fi.toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long' })) + (V.ingreso.hora ? ', ' + esc(fi.toLocaleTimeString('es-DO', { hour: 'numeric', minute: '2-digit' })) : '') + '</b>' +
+        (V.ingreso.sucursal ? '<br>' + esc(V.ingreso.sucursal) : '') + (V.ingreso.direccion ? '<br><span class="small">' + esc(V.ingreso.direccion) + '</span>' : '') + '</p></div>';
+    }
     if (V.listoIngreso) {
       html += '<div class="card" style="border-top:4px solid var(--ok)"><h1>¡Felicidades, ' + esc(primerNombre()) + '!</h1><div class="aviso ok"><b>Usted completó su proceso y está listo/a para ingresar.</b> Le escribiremos por WhatsApp con los detalles de su primer día.</div>' + ayuda() + '</div>';
     }

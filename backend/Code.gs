@@ -198,6 +198,7 @@ var EMPRESA = {
   nombre: 'Asesores Técnicos Empresariales',
   razon: 'Asesores Técnicos Empresariales, SRL',
   firmaRRHH: 'RRHH – Asesores Técnicos Empresariales, SRL',
+  rnc: '1-01-88169-2',
   plazoDias: 2,
   colores: { pri: '#1350D6', osc: '#0B3AA8', suave: '#EAF1FF' }
 };
@@ -527,7 +528,7 @@ function vistaCandidato(rec) {
   if (docs.referencia) { var drv = datosRef(rec); if (drv.desdeSolicitud) docs.referencia.datos = { primerEmpleo: true, refs: drv.refs }; }
   return { nombre: rec.nombre, cedula: rec.cedula, telefono: rec.telefono, correo: rec.correo, cliente: rec.cliente, vacante: rec.vacante, creado: rec.creado, vence: venceEn(rec),
            tienda: rec.tienda || '', turno: rec.turno || '', lider: rec.lider || '', liderTelefono: rec.liderTelefono || '', banco: bancoDeTienda(rec.cliente, rec.tienda), empleador: emp, defs: defs, orden: ordenDe(rec),
-           cartaBanco: !!rec.cartaBancoArchivo, listoIngreso: !!(rec.listoIngreso && rec.listoIngreso.en), pausa: rec.pausa && rec.pausa.activa ? { motivo: rec.pausa.mensaje || '' } : null,
+           cartaBanco: !!rec.cartaBancoArchivo, ingreso: rec.ingreso && rec.ingreso.fecha ? rec.ingreso : null, listoIngreso: !!(rec.listoIngreso && rec.listoIngreso.en), pausa: rec.pausa && rec.pausa.activa ? { motivo: rec.pausa.mensaje || '' } : null,
            enviadoEn: rec.enviadoEn, cerrado: rec.estado !== 'activo', docs: docs, progreso: progreso(rec),
            lab: { listo: !!rec.lab.referimiento, referimiento: !!rec.lab.referimientoArchivo, asistio: !!rec.lab.asistio, fechaAsistencia: rec.lab.fechaAsistencia },
            evaluacion: rec.evaluacion && rec.evaluacion.url ? { url: rec.evaluacion.url, nombre: rec.evaluacion.nombre || '', instrucciones: rec.evaluacion.instrucciones || '',
@@ -674,7 +675,7 @@ var NIVELES_PERS = ['Excelente', 'Bueno', 'Regular', 'Malo'];
 var RELACIONES_PERS = ['Amigo/a', 'Compañero/a de estudio', 'Vecino/a', 'Profesor/a', 'Otro (no familiar)'];
 
 /* Cambios del administrador: rutas permitidas */
-var RUTAS_ADMIN = /^(listoIngreso|pausa|tienda|turno|lider|liderTelefono|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco|tss|nomina|ponche|uniforme|cartaNomina)|psico\.(enviada|completada)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
+var RUTAS_ADMIN = /^(ingreso\.(fecha|hora|sucursal|direccion)|listoIngreso|pausa|tienda|turno|lider|liderTelefono|vacante\.(propina|propinaDespues)|nombre|cedula|cedulaVence|plazoExtraDias|tareas\.(ars|banco|tss|nomina|ponche|uniforme|cartaNomina)|psico\.(enviada|completada)|telefono|correo|sexo|notas|estado|vacante\.(posicion|salario|contratoMeses)|lab\.(referimiento|referimientoEn|asistio|fechaAsistencia|resultado|notas)|evaluacion\.(url|nombre|instrucciones|resultado|nota|abiertaEn|completadaEn)|referencia\.(verificada|resultado|fecha|contacto|comentarios|verificadoPor|formulario)|familiares\.(verificado|conflicto|notas)|enviadoEn)$/;
 function adminCambiar(rec, ruta, valor) {
   if (!RUTAS_ADMIN.test(ruta)) throw new Error('Campo no editable: ' + ruta);
   var p = ruta.split('.'), o = rec;
