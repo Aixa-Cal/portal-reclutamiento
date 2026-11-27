@@ -28,7 +28,7 @@ function modulosATE(V) {
       clave: 'Cobra cada quincena: los días 15 y 30 de cada mes.',
       p: ['Al ingresar recibe una carta de nómina para abrir su cuenta de banco.',
         'Cuando tenga el número de cuenta, envíelo por correo o WhatsApp a la persona que le asistió en la depuración.',
-        'Los pagos tienen los descuentos de ley. Si quiere recibir su comprobante cada mes, dénos su correo.'],
+        'A su pago se le aplican los aportes de ley (AFP, SFS y demás). Si quiere recibir su comprobante cada mes, dénos su correo.'],
       ejemplo: { t: 'Ya abrió su cuenta de banco.', bien: 'Envía su número de cuenta ese mismo día a la persona que le asistió, para que su pago llegue a tiempo.', mal: 'Esperar a que llegue la quincena para mandarlo. Su pago se puede atrasar.' } },
 
     { id: 'tramites', icono: '📝', titulo: 'Trámites del día a día', sub: 'Siempre con tiempo',

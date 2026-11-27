@@ -90,8 +90,7 @@
     var ind = docDe(rec, 'induccion'), indHecha = ind && pasoHecho(rec, 'induccion'), banco = bancoDeTienda(rec.cliente, rec.tienda);
     var lugar = ing.sucursal || rec.tienda || '';
     var puntos = [];
-    if (ind) puntos.push(indHecha ? 'Repase su *inducción* en su enlace si tiene alguna duda.' : 'Lea su *inducción* en su enlace (paso ' + numeroPaso(rec, 'induccion') + '): ' + enlace(rec));
-    else puntos.push('Lea el *documento de inducción adjunto*.');
+    puntos.push((ind && indHecha ? 'Repase su *inducción*' : 'Lea su *inducción*') + (ind ? ' (paso ' + numeroPaso(rec, 'induccion') + ' de su enlace)' : '') + ' aquí:\n' + enlace(rec));
     if (!talla) puntos.push('Confirme su talla de t-shirt: XS, S, M, L, XL o XXL.');
     puntos.push(c.directo ? 'Asista bien vestido/a, puntual, higienizado/a y sin chancletas.' : 'Asista con vestimenta completamente negra, puntual y con buena presentación.');
     puntos.push((c.directo ? 'Su líder le entregará su uniforme' : 'Su líder gestionará en la tienda su t-shirt y carnet') + (talla ? ' (talla ' + talla + ').' : '.'));
@@ -101,7 +100,7 @@
       (c.directo ? 'Las solicitudes y situaciones del trabajo diario debe comunicarlas primero a su líder' + (rec.lider ? ', *' + rec.lider + '*' : '') + '. Para Recursos Humanos y nómina, estamos a la orden.\n\n' :
         'Le recordamos que estará prestando servicios para *' + c.nombre + '* mediante la empresa contratista *' + EMPRESA.razon + ', RNC ' + EMPRESA.rnc + '*. Nosotros somos su empleador y su contacto para cualquier asistencia relacionada con su contratación y nómina.\n\n' +
         'Las solicitudes y situaciones del trabajo diario debe comunicarlas primero a su líder de tienda. De igual manera, siempre estaremos a la orden para ' + (fem ? 'orientarla y asistirla' : 'orientarlo y asistirlo') + '.\n\n') +
-      (rec.vacante.salario ? 'Su salario mensual será de *RD$' + rec.vacante.salario + '*, sujeto a los descuentos de ley correspondientes.\n\n' : '') +
+      (rec.vacante.salario ? 'Su salario mensual será de *RD$' + rec.vacante.salario + '*, sujeto a los aportes de ley correspondientes (AFP, SFS y demás).\n\n' : '') +
       'Por favor:\n' + puntos.map(function (p) { return '- ' + p; }).join('\n') + '\n\n' +
       (rec.cartaBancoArchivo ? 'Su *carta de nómina* ya está en su enlace (paso ' + numeroPaso(rec, 'banco') + '). Descárguela y diríjase al *' + banco + '* para abrir su cuenta.' :
         'También le adjuntamos su *carta de nómina*, con la cual deberá dirigirse al *' + banco + '* para abrir su cuenta.') +
